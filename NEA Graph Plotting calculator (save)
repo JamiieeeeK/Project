@@ -1,25 +1,26 @@
 import tkinter as tk
 from tkinter import *
+from tkinter import filedialog
 import matplotlib as mpl
 from matplotlib.figure import Figure
 from matplotlib import pyplot as plt
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg, NavigationToolbar2Tk
+from matplotlib.ticker import MultipleLocator, FuncFormatter
 import numpy as np
 import sympy as sp
 from sympy import *
-import pandas as pd
-
+import csv
 
 root = tk.Tk()
-root.title("Graph GUI")
+root.title("Graph Plotting - JK")
 root.geometry("930x700")
 root["bg"] = "lightgrey"
 
 
 #EQUATION -----
+location = 0
 def Location(i):
     global location
-    print("Location: ", i)
     location = i
 
 def InitialField():
@@ -27,33 +28,168 @@ def InitialField():
         CreateField(i)
     EntryField_list[0].insert(1.0, 'sin(x)')
 
-def newField(self):
+def newField(self=None):
     i = len(EntryField_list)
     EntryField_list.append(str(i+1))
     Appearance_field.append(str(i+1))
     Appearance_num.append(str(i+1))
+    Colour_block.append('')
+    ColorSetting.append('')
+    Colour_list.append("#4f5f9c")
+    COLOUR.append(tk.StringVar(root, value='#4f5f9c'))
+    OpenColour.append(False)
+    LineStyleSetting.append('')
+    Style_list.append("solid")
+    Style_block.append('')
+    Style_choice.append('')
+    OpenStyle.append(False)
     Equation_list.append('')
+    Line_list.append(str(i+1))
     EntryField_list[i-1].unbind('<ButtonRelease-1>')
     CreateField(i)
 
 def CreateField(I):
-    EntryField_list[I] = tk.Text(field_frame, height=2, width=31, bg="whitesmoke", font=("Arial",15))
+    EntryField_list[I] = tk.Text(field_frame, height=2, width=28, bg="whitesmoke", font=("Arial",15))
     EntryField_list[I].grid(row=I, column=1)
     EntryField_list[I].bind('<ButtonRelease-1>', newField)
     EntryField_list[I].bind('<KeyRelease>', GetEquation)
     EntryField_list[I].bind("<Button-1>", lambda x: Location(I))
     EntryField_list[I].bind("<Return>", lambda event: "break")
     
-    Appearance_field[I] = tk.Frame(field_frame, height=2, width=4, bg='darkgrey')
+    Appearance_field[I] = tk.Frame(field_frame, height=51, width=58, bg='darkgrey')
     Appearance_field[I].grid(row=I, column=0)
-    
-    Appearance_num[I] = tk.Text(Appearance_field[I], height=2, width=4, bg="whitesmoke", font=("Arial",15))
-    Appearance_num[I].grid(row=0, column=0)
+    Appearance_field[I].grid_propagate(False)
+    Appearance_num[I] = tk.Text(Appearance_field[I], height=1, width=5, bg="whitesmoke", font=("Arial",15))
+    Appearance_num[I].grid(row=0, column=0, columnspan=5)#, padx=2, pady=2)
     Appearance_num[I].insert(1.0,f" {I+1}:")
     Appearance_num[I].config(state='disable')
     
+    Colour_block[I] = tk.Frame(Appearance_field[I], height=24, width=24, bg="#4f5f9c", highlightbackground="black", highlightthickness=3)
+    Colour_block[I].grid(row=1,column=0, columnspan=2, stick="w")
+    Colour_block[I].bind("<Button-1>", lambda x: SelectColour(I))
+    if str(ColorSetting[I-1])!= '':
+        ColorSetting[I-1].lift()
+
+    Style_block[I] = tk.Frame(Appearance_field[I], height=24, width=34, bg="white", highlightbackground="black", highlightthickness=2)
+    Style_block[I].grid(row=1,column=2,columnspan=3,stick="w")
+    Style_block[I].grid_propagate(False)
+    Style_choice[I] = tk.Text(Style_block[I], height=1, width=3, bg="white")
+    Style_choice[I].grid(row=0, column=0,padx=1 , stick="news")
+    Style_choice[I].insert(1.0, "───")
+    Style_choice[I].config(state='disable')
+    Style_choice[I].bind("<Button-1>", lambda x: SelectStyle(I))
+    if str(LineStyleSetting[I-1])!= '':
+        LineStyleSetting[I-1].lift()
+    try:
+        if str(LineStyleSetting[I-2])!= '':
+            LineStyleSetting[I-2].lift()
+    except:
+        pass
+
+    Line_list[I] = tk.Button(field_frame, text="⋮", command=lambda:LineLocation(I), height=2, width=2, bg="whitesmoke", font=("Arial", 11))
+    Line_list[I].grid(row=I, column=2)
+
+
+
+#Colouring ---- 
+COLOUR = [tk.StringVar(root, value='#4f5f9c')]
+rgbEntry= ""
+OpenColour = [False]
+
+def colourcode(i):
+    Colour_block[i].config(bg=f"{COLOUR[i].get()}")
+    Colour_list[i] = COLOUR[i].get().strip()
+    #print(Colour_list[i])
+    GetEquation()
+
+def SetColour(i):
+    #check valid entry document error handling     
+    try:
+        Colour_block[i].config(bg=f"{COLOUR[i].get()}")
+        colourcode(i)
+    except:
+        ErrorMsg("wrong rgb")
+            
+    SelectColour(i)
+
+def SelectColour(i):
+    global ColorSetting
+    if str(ColorSetting[i])=='':
+        CreateColorFrame(i)        
+    elif OpenColour[i] == False:
+        ColorSetting[i].grid(row=int(i)+1,rowspan=2,column=0, columnspan=2,padx=2, stick="nw")
+        OpenColour[i] = True
+    elif OpenColour[i] == True:
+        ColorSetting[i].grid_forget()
+        OpenColour[i] = False
+
+def CreateColorFrame(i):
+    global OpenColor
+    ColorSetting[i] = tk.Frame(field_frame, height=54, width=122, bg="whitesmoke", highlightbackground="lightgrey", highlightthickness=2)
+    ColorSetting[i].grid(row=int(i)+1,rowspan=1,column=0, columnspan=2,padx=2, stick="nw")
+    ColorSetting[i].grid_propagate(False)
+    rgbLabel = tk.Label(ColorSetting[i], text=" rgb code:       ", width=11, font=("Arial",11), bg="whitesmoke")
+    rgbLabel.grid(row=0, column=1, columnspan=1, stick="nw")
+    rgbEntry = tk.Entry(ColorSetting[i], textvariable=COLOUR[i], width=10, font=("Arial",11))
+    rgbEntry.grid(row=1, column=1, columnspan=3, pady=3, padx=3, stick="n")
+    rgbEntry.bind("<Return>", lambda x: SetColour(i))
+    OpenColour[i] = True
+
+
+def ChangeStyle(style,line,i):
+    Style_list[i] = style
+    Style_choice[i].config(state='normal')
+    Style_choice[i].delete(1.0, tk.END)
+    Style_choice[i].insert(1.0, line)
+    Style_choice[i].config(state='disable')
+    GetEquation()
+    SelectStyle(i)
+
+OpenStyle = [False]
+def SelectStyle(i):
+    if str(LineStyleSetting[i])=='':
+        CreateStyleFrame(i)
+    elif OpenStyle[i] == False:
+        LineStyleSetting[i].grid(row=int(i)+1,rowspan=2,column=0, columnspan=2,padx=2, stick="nw")
+        OpenStyle[i] = True
+    elif OpenStyle[i] == True:
+        LineStyleSetting[i].grid_forget()
+        OpenStyle[i] = False
+
+def CreateStyleFrame(i):    
+    LineStyleSetting[i] = tk.Frame(field_frame, height=78, width=125, bg="whitesmoke", highlightbackground="lightgrey", highlightthickness=2)
+    LineStyleSetting[i].grid(row=int(i)+1,rowspan=2,column=0, columnspan=2,padx=2, stick="nw")
+    LineStyleSetting[i].grid_propagate(False)
+    LineStyleLabel = tk.Label(LineStyleSetting[i], text="line style:    ", width=13, font=("Arial",11), bg="whitesmoke")
+    LineStyleLabel.grid(row=0, column=0, columnspan=3, stick="nwe")
+    LineStyleLabel.grid_propagate(False)
+    btn_solid = tk.Button(LineStyleSetting[i], text="───", command=lambda:ChangeStyle("solid","───",i), height=1, width=4, font=("Arial",8,"bold"))
+    btn_solid.grid(row=1, column=0, padx=5)
+    btn_dot = tk.Button(LineStyleSetting[i], text="····", command=lambda:ChangeStyle("dotted","···",i), height=1, width=4, font=("Arial",8,"bold"))
+    btn_dot.grid(row=1, column=1)
+    btn_dash = tk.Button(LineStyleSetting[i], text="----", command=lambda:ChangeStyle("dashed","---",i), height=1, width=4, font=("Arial",8,"bold"))
+    btn_dash.grid(row=2, column=0, padx=5)
+    btn_dado = tk.Button(LineStyleSetting[i], text="−·−·", command=lambda:ChangeStyle("dashdot","−·−",i), height=1, width=4, font=("Arial",8,"bold"))
+    btn_dado.grid(row=2, column=1)
+    OpenStyle[i] = True
+
+
+    
 
 #GRAPH ------
+def format_func(value, tick_number):
+    N = int(np.round(value / np.pi))  # Find the multiple of pi
+    if N == 0:
+        return '0'
+    elif N == 1:
+        return r'$\pi$'
+    elif N == -1:
+        return r'$-\pi$'
+    else:
+        return r'${0}\pi$'.format(N)
+
+
+
 xmin = -90
 xmax = 360
 ymin = -1.5
@@ -62,24 +198,32 @@ dragx = 0
 dragy = 0
 
 def InitialGraph():
-    ControlGraph_Frame.grid_forget()
+    control_graph.grid_forget()
     global setting
     global dragx, dragy
     setting = False
+
     ax.spines[['left','bottom']].set_position('zero')
-    ax.spines[['right','top']].set_visible(False)    
+    ax.spines[['right','top']].set_visible(False)
     plt.grid()
 
+    xmin=-90
+    xmax=360
     if unit.get() == 'Radian':
-        xmin = -2*3.1415
-        xmax = 2*3.1415
+        xmin = -2*np.pi
+        xmax = 4*np.pi
+        ax.xaxis.set_major_locator(MultipleLocator(base=np.pi))
+        ax.xaxis.set_major_formatter(FuncFormatter(format_func))
+        ax.tick_params(axis='x', direction='inout', length=4, width=1, colors='black')
     elif unit.get() == 'Degree':
         xmin = -90
         xmax = 360
+        
     ymin = -5
     ymax = 5
-    dragx = dragx//10
-    dragy = dragy//10
+    dragx = dragx/2.5
+    dragy = dragy/2.5
+    
     try:
         float(DomainMin.get())
         float(DomainMax.get())
@@ -87,30 +231,74 @@ def InitialGraph():
         float(RangeMax.get())
         ax.set(xlim=(float(DomainMin.get())-dragx, float(DomainMax.get())-dragx), ylim=(float(RangeMin.get())+dragy, float(RangeMax.get())+dragy))
         error_message.config(text="")
+        xValue_slider.configure(from_=float(DomainMin.get())-dragx, to=float(DomainMax.get())-dragx)
+
+        if float(RangeMin.get())+dragy >= 0:
+            ax.spines['top'].set_position(('axes',0.00))
+            ax.spines['top'].set_visible(True)
+            ax.spines['bottom'].set_visible(False)
+            ax.xaxis.set_ticks_position("top")
+            ax.xaxis.set_label_position("top")
+        elif float(RangeMin.get())+dragy < 0:
+            ax.spines['bottom'].set_visible(True)
+            ax.spines['top'].set_visible(False)
+            ax.xaxis.set_ticks_position("bottom")
+            ax.xaxis.set_label_position("bottom")
+        if float(RangeMax.get())+dragy <= 0:
+            ax.spines['bottom'].set_position(('axes',1.00))
+
+        if float(DomainMin.get())-dragx >= 0:
+            ax.spines['right'].set_position(('axes', 0.00))
+            ax.spines['right'].set_visible(True)
+            ax.spines['left'].set_visible(False)
+            ax.yaxis.set_ticks_position("right")
+            ax.yaxis.set_label_position("right")
+        elif float(DomainMin.get())-dragx <0:
+            ax.spines['left'].set_visible(True)
+            ax.spines['right'].set_visible(False)
+            ax.yaxis.set_ticks_position("left")
+            ax.yaxis.set_label_position("left")
+        if float(DomainMax.get())-dragx <= 0:
+            ax.spines['left'].set_position(('axes', 1.00))
+
     except:
         DomainMin.set(round((xmin),1))
-        DomainMax.set(round((xmax),1))
+        DomainMax.set(round((xmax),1)) 
         RangeMin.set(ymin)
         RangeMax.set(ymax)
         ax.set(xlim=(xmin, xmax), ylim=(ymin, ymax))
         ErrorMsg("wrong format entered")
-    canvas.draw()
+        xValue_slider.configure(from_=xmin, to=xmax)
 
+    ax.set_xlabel(str(LabelX.get()) + "     ", loc="right")
+    ax.set_ylabel(str(LabelY.get()) + "   ", loc="top")
+    canvas.draw()
 
 def ErrorMsg(display):
     error_message.grid(row=0, column=18)
     error_message.config(text=f"*Error: {display}")
 
 
-#def Graph():
-    #ControlGraph_Frame.grid_forget()
- #   InitialGraph()
-  #  canvas.draw()
+def ChangeRadian(*args):
+    DomainMin.set(round((-2*np.pi),1))
+    DomainMax.set(round((4*np.pi),1))
+    RangeMin.set(-2)
+    RangeMax.set(2)
+    GetEquation()
+
+
+def ChangeDegree(*args):
+    DomainMin.set(-90)
+    DomainMax.set(360)
+    RangeMin.set(-2)
+    RangeMax.set(2)
+    GetEquation()
+
 
 #TRIG? ----
 def is_trig(eq):
     trig_functions = [sp.sin, sp.cos, sp.tan, sp.cot, sp.sec, sp.csc, sp.asin, sp.acos, sp.atan, sp.acot, sp.asec, sp.acsc]
-    #print('check if is trig: ', eq)    
+    #print('check if is trig: ', eq)
     for func in trig_functions:
         try:
             if eq.has(func):
@@ -128,91 +316,85 @@ def is_valid_expression(expr):
         return False
 
 
-def Graph2(Equation, SolveFor):
-    #ControlGraph_Frame.grid_forget()
+def Graph2(Equation, SolveFor, colour, style):
     InitialGraph()
-    #print (Equation)
+    global y_vals, x_vals, DomainMin, DomainMax
+    x_vals = []
+    y_vals = []
+    xMin = int(round(float(DomainMin.get()),0))-10
+    xMax = int(round(float(DomainMax.get()),0))+10
+    yMin = int(round(float(RangeMin.get()),0))-10
+    yMax = int(round(float(RangeMax.get()),0))+10
+    linspaceX = (xMax-xMin)*200
+    linspaceY = (yMax-yMin)*200
+    plotted = False
     try:
         if SolveFor == 'y':
             if isinstance(Equation, (int, float, sp.Integer, sp.Float)):
                 y_val = float(Equation)
-                x_vals = np.linspace(-500, 500, 10000)
+                x_vals = np.linspace(xMin, xMax, linspaceX)
                 y_vals = np.full_like(x_vals, y_val)
-                #print('1')
             else:     
                 f_np = sp.lambdify(x, Equation, 'numpy')
                 if is_trig(Equation) == True:
-                    #print(Equation)
-                    xR_vals = np.linspace(-500, 500, 10000)
-                    xD_vals = np.degrees(xR_vals)
+                    xR_vals = np.linspace(xMin,xMax,linspaceX)
                     y_vals = f_np(xR_vals)
 
                     if unit.get() == "Radian":
                         x_vals = xR_vals
                     elif unit.get() == "Degree":
-                        x_vals = xD_vals
-                    #print ('2')
+                        x_vals = np.degrees(xR_vals)
                 else:
-                    x_vals = np.linspace(-500,500,10000)
+                    x_vals = np.linspace(xMin,xMax,linspaceX)
                     y_vals = f_np(x_vals)
-                    #print(Equation)
+
             replacelogln = ""
             if str(Equation).index("log(") != -1:
-                #print("log at", str(Equation).index("log("))
                 indexlog = str(Equation).index("log(")
                 equation = str(Equation)
                 endplace = indexlog + 4
                 replacelogln = equation[0:indexlog] + "ln(" + equation[endplace:len(equation)]
-                #print(replacelogln)
                 Equation = replacelogln
-            Equation = 'y = ' + str(Equation)
         elif SolveFor == 'x':
             if isinstance(Equation, (int, float, sp.Integer, sp.Float)):
                 # Equation is a simple assignment like x = 2
                 x_val = float(Equation)
-                y_vals = np.linspace(-500, 500, 5000)
+                y_vals = np.linspace(yMin,yMax,linspaceY)
                 x_vals = np.full_like(y_vals, x_val)
             else:
-                f_np = sp.lambdify(y, Equation, 'numpy')
-    
+                f_np = sp.lambdify(y, Equation, 'numpy')  
                 if is_trig(Equation):
-                    yR_vals = np.linspace(-500, 500, 10000)
-                    yD_vals = np.degrees(yR_vals)
+                    yR_vals = np.linspace(yMin,yMax,linspaceY)
                     x_vals = f_np(yR_vals)
 
                     if unit.get() == "Radian":
                         y_vals = yR_vals
                     elif unit.get() == "Degree":
-                        y_vals = yD_vals
+                        y_vals = np.degrees(yR_vals)
                 else:
-                    y_vals = np.linspace(-500, 500, 10000)
+                    y_vals = np.linspace(yMin,yMax,linspaceY)
                     x_vals = f_np(y_vals)
-            Equation = 'x =' + str(Equation)
+            ax.axvline(x=float(Equation), linestyle=style, label=f"x = {str(Equation)}", color=colour)
+            ax.legend()
+            plotted = True
+
+
     except Exception as e:
-        pass
+        ErrorMsg("Equation: Invalid expression")
     try:
-        ax.plot(x_vals, y_vals, label=Equation)
-        ax.legend()
+        if x_vals is not None and y_vals is not None:
+            if plotted == False:
+                Equation = sp.factor(Equation)
+                ax.plot(x_vals, y_vals, linestyle=style, label=f"{SolveFor} = {Equation}", color=colour)
+                ax.legend()
+    except:
+        ErrorMsg("Equation: Invalid expression")
+    try:
+        for i in range(0, len(Point)):
+            ax.plot(Point[i][0], Point[i][1], '.', color="black")
     except:
         pass
     canvas.draw()
-    
-            
-
-#PROCESS_GRAPH -----
-def GetEquation(*args):
-    ax.clear()
-    canvas.draw()
-    for i in range(0,len(EntryField_list)-1):
-        Equation_list[i] = EntryField_list[i].get("1.0", tk.END).strip()
-        try:
-            Equation(Equation_list[i])
-        except:
-            ErrorMsg("Equation: Invalid expression")
-    if len(num_xvalues) >= 2:
-        PlotCoordinate()
-    else:
-        pass
 
 x, y, z = sp.symbols('x y z')
 f = Function('f')(x)
@@ -220,28 +402,153 @@ g = Function('g')(x)
 h = Function('h')(x)
 solve_for = ''
 
+Xintercept = []
+Yintercept = []
+#Calculate point of interception -----
+def PtOfIntercept(expr, solve_for):
+    global Xintercept, Yintercept
+    equation = str(expr)
+    if "x" in equation:
+        # for x = 0
+        Yintercept_pt = expr.subs(x,0)
+        Xintercept.append(0)
+        Yintercept.append(Yintercept_pt)
+        #for y = 0
+        eq = sp.factor(expr)
+        domainMin = float(DomainMin.get()) #get the domain values
+        domainMax = float(DomainMax.get())
+        print(domainMax) #variable check
+        if unit.get() == "Degree" and is_trig(eq) == True: #convert into radian if is degree
+            domainMin = sp.rad(domainMin)
+            domainMax = sp.rad(domainMax)
+        print(domainMin) #variable check
+        Xintercept_pts = list(sp.solveset(sp.Eq(eq,0),x, domain=sp.Interval(domainMin, domainMax)))
+        print(Xintercept_pts)
+        for i in range(0, len(Xintercept_pts)):
+            item = Xintercept_pts[i]
+            if not item.is_real:
+                Xintercept_pts[i] = float(sp.re(item.evalf()))
+            
+                
+        for item in Xintercept_pts: 
+           if item != 0: #prevent duplication
+                Xintercept.append(item) #add value to the list
+                Yintercept.append(0) #root with y value = 0
+                  
+
+    elif solve_for == "x":
+        Xintercept.append(eq)
+        Yintercept.append(0)
+    elif solve_for == "y":
+        Xintercept.append(0)
+        Yintercept.append(eq)
+        
+    if unit.get() == "Degree":
+        Xintercept = ChangePi(Xintercept)
+        #print("caught")
+        
+
+
+
+        
+def ChangePi(list):
+    i = -1
+    for item in list:
+        i += 1
+        if "pi" in str(item):
+            list[i] = sp.deg(item)         
+    return list
+
+
+plotforinter = False
+def PlotIntercept():
+    global plotforinter
+    if plotforinter == False:
+        plotforinter = True
+    elif plotforinter == True:
+        plotforinter = False
+    GetEquation()
+ 
+
+
+#PROCESS_GRAPH -----
+def GetEquation(*args):
+    global Xintercept, Yintercept, plotforinter
+    ax.clear()
+    canvas.draw()
+    Xintercept = []
+    Yintercept = []
+    for i in range(0,len(EntryField_list)-1):
+        Equation_list[i] = EntryField_list[i].get("1.0", tk.END).strip()
+        equation = ChangeSymbol(Equation_list[i])
+        try:
+            result, solve_for = Equation(equation)
+            colour = Colour_list[i]
+            style = Style_list[i]
+            Graph2(result, solve_for, colour, style)
+            if plotforinter == True:
+                PtOfIntercept(result, solve_for)
+            error_message.grid_forget()
+        except:
+            ErrorMsg("Equation: Invalid expression")
+    if plotforinter == True:
+        print(Xintercept)
+        print(Yintercept)
+        print("--------------")
+        PlotCoordinate(Xintercept, Yintercept, "black")
+
+    if len(num_xvalues) >= 2:
+        PlotCoordinate(Xcoordinate, Y1coordinate, y1_rgb.get())
+        PlotCoordinate(Xcoordinate, Y2coordinate, y2_rgb.get())
+    else:
+        pass
+
+def ChangeSymbol(equation):
+    if "π" in equation:
+        replace_pi = equation
+        replace_pi = replace_pi.replace("π", "3.1415926")
+        #print(replace_pi)
+        return replace_pi
+    if "|" in equation:
+        replace_abs = equation
+        while "|" in replace_abs:
+            first_index = replace_abs.find("|")
+            replace_abs = replace_abs[:first_index]+"abs("+replace_abs[first_index+1:]
+            second_index = replace_abs.find("|")
+            replace_abs = replace_abs[:second_index]+")"+replace_abs[second_index+1:]
+        #print(replace_abs)
+        return replace_abs
+    else:
+        return equation
+        
+            
+
+
+
 def Equation(Entry):
     Entry = Entry.replace(" ", "")
     solve_for = ''
     Equal = True
-
+    
     if '=' in Entry:
         lhs_str, rhs_str = Entry.split('=')
         if not is_valid_expression(lhs_str) or not is_valid_expression(rhs_str):
-            raise ValueError("Invalid expression1")
+            raise ValueError("Equation: Invalid expression")
         lhs = sp.sympify(lhs_str.strip())
         rhs = sp.sympify(rhs_str.strip())
         eq = sp.Eq(lhs, rhs)
         if "f(x)" in Entry or "g(x)" in Entry or "h(x)" in Entry :
             eq = rhs
+           
     else:
         if not is_valid_expression(Entry):
-            raise ValueError("Invalid expression2")
+            raise ValueError("Invalide expression")
+            ErrorMsg("Equation: Invalid expression")
         try:
             eq = sp.sympify(Entry.strip())
         except:
-            pass
-    error_message.grid_forget()
+            ErrorMsg("Equation: Invalid expression")
+   
         
 
     if "=" in Entry:
@@ -249,6 +556,8 @@ def Equation(Entry):
             solve_for = 'y'
         elif "x" in Entry :
             solve_for = 'x'
+            eq = sp.solve(eq,x)
+            eq = eq[0]
         if Entry[0] == "x=":
             solve_for = 'x'
     elif "=" not in Entry:
@@ -259,66 +568,233 @@ def Equation(Entry):
     try:
         if Equal == False:
             result = eq
-            Graph2(result, solve_for)
+            return result, solve_for
         else:
             result = sp.solve(eq, solve_for)
-            Graph2(result[0], solve_for)
-        error_message.grid_forget()
+            if len(result) == 2:
+                return result[1], solve_for
+            return result[0], solve_for
     except NotImplementedError as e:
         # Handle equation types not supported by SymPy
-        ErrorMsg("")
-        #print(f"Error: SymPy does not support solving this type of equation.")
-
+        ErrorMsg("Error: SymPy does not support solving this type of equation")
+    
     except Exception as e:
-        ErrorMsg(e)
+        ErrorMsg("Equation: Invalid expression")
         result = eq
-        Graph2(result, solve_for)
+        return result, solve_for
         
 
-#--------
+#Calculate Values --------
+def CalY(eq):
+    global xpoint, ypoint
+    if is_trig(eq) == True:
+        if unit.get() == "Degree":
+            xRpoint = sp.rad(xpoint)
+            ypoint = eq.subs(x, xRpoint).evalf()
+            ypoint = round(ypoint, 3)
+            #print(ypoint)
+        elif unit.get() == "Radian":
+            ypoint = eq.subs(x, xpoint).evalf()
+            ypoint=round(ypoint,3)
+    else:
+            ypoint = eq.subs(x, xpoint)
+            ypoint = round(ypoint,2)
+    eq = ''
+    
+    if str(ypoint)[-12:] == "000000000000":
+        ypoint = float(str(ypoint)[:-12])
+        
+    if str(ypoint)== "nan":
+        return "null"
+    #print(ypoint)
+    return ypoint
+
+def CalGradient(eq):
+    global xpoint, ypoint, gradient
+    differentiate = sp.diff(eq,x)
+    if is_trig(differentiate) == True:
+        if unit.get() == "Degree":
+            xRpoint = sp.rad(xpoint)
+            gradient = differentiate.subs(x,xRpoint) * (3.1415926/180)
+        elif unit.get() == "Radian":
+            gradient = differentiate.subs(x, xpoint)
+    else:
+        gradient = differentiate.subs(x,xpoint)
+    if LineType == "NORMAL":
+        gradient = -1*(1/gradient)
+    gradient = round(gradient, 3)
+    if str(gradient)== "nan":
+        return "null"
+    return gradient
+
+
+#AddLine to Field --------
+Point = []
+def AddLine(*args):
+    global xpoint, ypoint, gradient
+    LineEq = f"y-{ypoint} = {gradient}*(x-{xpoint})"
+    LineEq, solve_for = Equation(LineEq)
+    i = len(EntryField_list)-1
+    EntryField_list[i].insert(1.0, LineEq)
+    
+    Point.append([xpoint,ypoint])
+    canvas.draw()
+    
+    newField()
+
+#TANGENT/NORMAL LINE -----
+xpoint=000.00
+ypoint=00.000
+gradient=0.000
+eq = ''
+xValue = tk.StringVar(root, value='0.000')
+LineType = "TANGENT"
+def SetX(self):
+    global xpoint, xValue, xValue_slider
+    xpoint = float(xValue.get())
+    xValue_slider.set(xpoint)
+    
+def GetX(self):
+    global xpoint, xValue_slider, xValue
+    xpoint = float(xValue_slider.get())
+    xValue.set(xpoint)
+    CalLine()
+
+def CalLine(*args):
+    global xpoint, xValue_slider, xValue_label, line_setting, location, point, gradient_label, gradient
+    eq = EntryField_list[location].get("1.0", tk.END).strip()
+    eq = ChangeSymbol(eq)
+    eq, solve_for = Equation(eq)
+    if solve_for == 'y':
+        ypoint = CalY(eq)
+        xValue_label.config(text=f"  line intercept at x: {xpoint} y: {ypoint} ")
+        point, = ax.plot(xpoint,ypoint, '.', color="black")
+        canvas.draw()
+        point.remove()
+        gradient = CalGradient(eq)
+        gradient_label.config(text=f" gradient = {gradient}  ")
+        
+    else:
+        xValue_label.config(text=f"  line intercept at x: {xpoint} y: null ")
+        gradient_label.config(text=f" gradient = 0  ")
+    
+
+def LineLocation(I):
+    global location
+    location = I
+    GradientLine()
+
+SetLine = True
+def GradientLine(*args):
+    global location, line_setting,SetLine
+    if SetLine == True:
+        line_setting.grid(row=1, rowspan=3, column=1, columnspan=3, padx=2, pady=2)
+        SetLine = False
+    elif SetLine == False:
+        line_setting.grid_forget()
+        SetLine = True
+
+def ChangeType(*args):
+    global LineType, TLine_button, TLine_menu
+    if LineType == "TANGENT":
+        TLine_button.config(text="NORMAL")
+        TLine_menu.entryconfig(0, label="Tangent", command=ChangeType)
+        LineType = "NORMAL"
+    elif LineType == "NORMAL":
+        TLine_button.config(text="TANGENT")
+        TLine_menu.entryconfig(0, label="Normal", command=ChangeType)
+        LineType = "TANGENT"
+    CalLine()
+    #print(LineType)
+    
+
+    
+def lineFrame(*args):
+    global GradientLine_Frame, line_setting, xValue_label, xValue_slider, xValue_enter, gradient_label, TLine_button, TLine_menu
+    Label = tk.Label(line_setting, text="Tangent/Normal Line", bg="whitesmoke", font=14)
+    Label.grid(row=0, column=1, columnspan=6, pady=5)
+    xValue_label = tk.Label(line_setting, text=f"  line intercept at x: {xpoint} y: {ypoint} ", bg="whitesmoke", font=12)
+    xValue_label.grid(row=1, column=1, columnspan=5, stick="w")
+    xValue_label.grid_propagate(False)
+    xValue_slider = tk.Scale(line_setting, from_=-90.0, to=360.0, resolution=0.0001, command=GetX, bg="whitesmoke", width=15, length=275, font=12, orient=HORIZONTAL)
+    xValue_slider.set(0)
+    xValue_slider.grid(row=2, rowspan=3, column=1, columnspan=5, padx=5, stick="w")
+    xValue_enter = tk.Entry(line_setting, width=7, textvariable=xValue, font=9)
+    xValue_enter.grid(row=4, column=6, padx=7)
+    xValue_enter.bind("<Return>", SetX)
+    line_setting.bind("<Return>", line_setting.grid_forget())
+    gradient_label = tk.Label(line_setting, text=f"  gradient = {gradient}  ", bg="whitesmoke", font=12)
+    gradient_label.grid(row=5, column=1, columnspan=2, stick="w")
+    TLine_button = tk.Menubutton(line_setting, text="TANGENT", width=10, font=("Arial", 11, "bold"), bg="whitesmoke", fg="black", relief="raised")
+    TLine_button.grid(row=5, column=5, columnspan=2)
+    TLine_menu = Menu(TLine_button, tearoff=0, bg="whitesmoke", font=("Arial", 11))
+    TLine_menu.add_command(label="Normal", command=ChangeType)
+    TLine_button.config(menu=TLine_menu)
+    LineEnter_button = tk.Button(line_setting, text="ENTER", command= lambda:AddLine(), height=1, width=8, font=("Arial", 11, "bold"))
+    LineEnter_button.grid(row=6, column=3, columnspan=2, pady=4)
+
+                     
+#----------
 #GRAPH SETTING ----
 DomainMin = tk.StringVar(root, value=-90)
 DomainMax = tk.StringVar(root, value=360)
 RangeMin = tk.StringVar(root, value=-2)
 RangeMax = tk.StringVar(root, value=2)
+LabelX = tk.StringVar(root)
+LabelX.set("x axis")
+LabelY = tk.StringVar(root)
+LabelY.set("y axis")
 
 setting = False
 def SetGraph():
     global setting
     if setting == False:
-        ControlGraph_Frame.grid(row=2, rowspan=3, column=2, columnspan=3)
+        control_graph.grid(row=2, rowspan=3, column=2, columnspan=3)
         setting = True
     elif setting == True:
-        ControlGraph_Frame.grid_forget()
+        control_graph.grid_forget()
         setting = False
         
-
+def SetGraph_Entries():
+    global control_graph
     DomainMin_label = tk.Label(control_graph, text="x min value:    ", bg = "whitesmoke", font=10)
-    DomainMin_label.grid(row=0, column=1)
-    domain_min_entry = tk.Entry(control_graph,width=10, textvariable=DomainMin, font=("Arial",12))
+    DomainMin_label.grid(row=0, column=1, padx=10)
+    domain_min_entry = tk.Entry(control_graph,width=12, textvariable=DomainMin, font=("Arial",12))
     domain_min_entry.grid(row=1, column=1, padx=6, pady=5)
     domain_min_entry.bind("<Return>", GetEquation)
 
-    DomainMax_label = tk.Label(control_graph, text="x max value:    ", font=10, bg="whitesmoke")
-    DomainMax_label.grid(row=0, column=2)
-    domain_max_entry = tk.Entry(control_graph,width=10, textvariable=DomainMax, font=("Arial",12))
+    DomainMax_label = tk.Label(control_graph, text="x max value:  ", font=10, bg="whitesmoke")
+    DomainMax_label.grid(row=0, column=2, padx=10)
+    domain_max_entry = tk.Entry(control_graph,width=12, textvariable=DomainMax, font=("Arial",12))
     domain_max_entry.grid(row=1, column=2, padx=6, pady=5)
     domain_max_entry.bind("<Return>", GetEquation)
 
     RangeMin_label = tk.Label(control_graph, text="y min value:    ", font=10, bg="whitesmoke" )
-    RangeMin_label.grid(row=2, column=1)
-    range_min_entry = tk.Entry(control_graph,width=10, textvariable=RangeMin, font=("Arial",12))
+    RangeMin_label.grid(row=2, column=1, padx=10)
+    range_min_entry = tk.Entry(control_graph,width=12, textvariable=RangeMin, font=("Arial",12))
     range_min_entry.grid(row=3, column=1, padx=6, pady=5)
     range_min_entry.bind("<Return>", GetEquation)
 
-    RangeMax_label = tk.Label(control_graph, text="y max value:    ", font=10, bg="whitesmoke")
-    RangeMax_label.grid(row=2, column=2)
-    range_max_entry = tk.Entry(control_graph,width=10, textvariable=RangeMax, font=("Arial",12))
+    RangeMax_label = tk.Label(control_graph, text="y max value:  ", font=10, bg="whitesmoke")
+    RangeMax_label.grid(row=2, column=2, padx=10)
+    range_max_entry = tk.Entry(control_graph,width=12, textvariable=RangeMax, font=("Arial",12))
     range_max_entry.grid(row=3, column=2, padx=6, pady=5)
     range_max_entry.bind("<Return>", GetEquation)
 
+    xLabel_label = tk.Label(control_graph, text="x axis label:  ", font=10, bg="whitesmoke")
+    xLabel_label.grid(row=4, column=1, padx=10)
+    xLabel_entry = tk.Entry(control_graph, width=12, textvariable=LabelX, font=("Arial",12))
+    xLabel_entry.grid(row=5, column=1, padx=6, pady=5)
+    xLabel_entry.bind("<Return>", GetEquation)
+    
+    yLabel_label = tk.Label(control_graph, text="y axis label:  ", font=10, bg="whitesmoke")
+    yLabel_label.grid(row=4, column=2, padx=10)
+    yLabel_entry = tk.Entry(control_graph, width=12, textvariable=LabelY, font=("Arial",12))
+    yLabel_entry.grid(row=5, column=2, padx=6, pady=5)
+    yLabel_entry.bind("<Return>", GetEquation)
+
     Enter = tk.Button(control_graph, text="-- Enter --", command=GetEquation, font=("Arial",12, "bold"))
-    Enter.grid(row=4, column=1, columnspan=2, pady=5)
+    Enter.grid(row=6, column=1, columnspan=2, pady=5)
 
 def OnDrag(event):
     global originalx, originaly
@@ -330,6 +806,7 @@ def drag_graph(event):
     dragx = canvas.get_tk_widget().winfo_x() - originalx + event.x 
     dragy = canvas.get_tk_widget().winfo_y() - originaly + event.y 
     InitialGraph()
+    GetEquation()
 
 def UpdateDrag(event):
     DomainMin.set(float(DomainMin.get())-dragx)
@@ -337,9 +814,12 @@ def UpdateDrag(event):
     RangeMin.set(float(RangeMin.get())+dragy)
     RangeMax.set(float(RangeMax.get())+dragy)
 
+    
 #--------
 #CHANGE PAGE ----
+page = "EQUATION"
 def ShowTable(*args):
+    global page
     TGraph_button.config(text="TABLE")
     TGraph_menu.entryconfig(0, label="Equation", command=ShowEquation)
     scroll_table.grid(row=1, column=1, rowspan=6, columnspan=8, pady=4, stick="n")
@@ -347,8 +827,10 @@ def ShowTable(*args):
     h_table.grid(row=6, column=1, columnspan=8, stick="sew", pady=4)
     scroll_canvas.grid_forget()
     v_field.grid_forget()
+    page = "TABLE"
 
 def ShowEquation(*args):
+    global page
     TGraph_button.config(text="EQUATION")
     TGraph_menu.entryconfig(0,label="Table", command=ShowTable)
     scroll_canvas.grid(row=1, column=1, rowspan=6, columnspan=8, pady=4, stick="n")
@@ -356,70 +838,236 @@ def ShowEquation(*args):
     scroll_table.grid_forget()
     v_table.grid_forget()
     h_table.grid_forget()
+    page = "EQUATION"
 #---------
 #Process coordinate ----
 Xcoordinate = []
-Ycoordinate = []
-def PlotCoordinate(*args):
+Y1coordinate = []
+Y2coordinate = []
+def PlotCoordinate(Xlist, Ylist, colour):
     x = 0
     y = 0
     InitialGraph()
-    for i in range(0,len(Xcoordinate)):
+    for i in range(0,len(Xlist)):
         try:
-            x = float(Xcoordinate[i])
-            y = float(Ycoordinate[i])
-            ax.plot(x, y, '.')
+            x = float(Xlist[i])
+            y = float(Ylist[i])
+            ax.plot(x, y, '.', color=colour)
         except:
-            ErrorMsg("Table: Invalid expression")
+            if Xlist[i] == "" or Ylist[i] == "":
+                ErrorMsg("Table: empty")
+            else:
+                ErrorMsg("Table: Invalid expression")
         canvas.draw()
-            
+       
+        
+#Keyboard Location ------
+table = "x"
+table_location = 0
+def TableXLocation(i):
+    global table, table_location
+    table = "x"
+    table_location = int(i)
+
+
+def TableYLocation(i, column):
+    global table, table_location
+    if column == 1:
+        table = "y1"
+    elif column == 2:
+        table ="y2"
+    table_location = int(i)
+    
 
 #Table Field ----
+Col = "X"              
+def ActY1(*args):
+    global Col
+    global y1_coordinate, num_y1values, y1_colour
+    y1_coordinate.config(state="normal", bd=1, bg="#FDFDFD")
+    y1_coordinate.insert(1.0, "   y₁")
+    y1_coordinate.config(state="disable")
+    #unbind
+    print("pass")
+    for I in range(0, len(num_y1values)):
+        num_y1values[I].unbind("<<Modified>>")
+        num_y1values[I].config(bg="#FDFDFD")
+        num_y2values[I].config(bd=1)
+    Col = "Y1"
+    y1_colour.grid(row=1, column=4, pady=4, padx=4, sticky="e")
+    
+        
+def ActY2(*args):
+    global Col
+    global y2_coordinate, num_y2values, y2_colour
+    y2_coordinate.config(state="normal", bd=1, bg="#FDFDFD")
+    y2_coordinate.insert(1.0, "   y₂")
+    y2_coordinate.config(state="disable")
+    #unbind
+    print("pass")
+    for I in range(0, len(num_y2values)):
+        num_y2values[I].unbind("<<Modified>>")
+        num_y2values[I].config(bd=1, bg="#FDFDFD")
+    Col = "Y2"
+    y2_colour.grid(row=1, column=6, pady=4, padx=4, sticky="e")
+        
 num_xvalues = []
-num_yvalues = []
-def coordinates(*args):    
-    x_coordinate = tk.Text(coordinate_frame, height=1, width=4, bg="whitesmoke", font=("Arial",17))
-    x_coordinate.grid(row=1, column=1)
+num_y1values = []
+num_y2values = []
+y1_rgb = tk.StringVar(root, "#626c8d")
+y2_rgb = tk.StringVar(root, "#736a58")
+OpenY1 = False
+OpenY2 = False
+def YColour(column):
+    global OpenY1, ColourFrameY1
+    global OpenY2, ColourFrameY2
+    if column == 1:
+        if OpenY1 == False:
+            ColourFrameY1.grid(row=2, rowspan=2, column=3, columnspan=2, sticky="ne")
+            OpenY1 = True
+        elif OpenY1 == True:
+            ColourFrameY1.grid_forget()
+            OpenY1 = False
+    elif column == 2:
+        if OpenY2 == False:
+            ColourFrameY2.grid(row=2, rowspan=2, column=5, columnspan=2, sticky="ne")
+            OpenY2 = True
+        elif OpenY2 == True:
+            ColourFrameY2.grid_forget()
+            OpenY2 = False
+
+def SetYrgb(column):
+    if column == 1:
+        y1_colour.config(bg=y1_rgb.get())
+    elif column == 2:
+        y2_colour.config(bg=y2_rgb.get())
+    GetCoordinate()
+
+def coordinates(*args):
+    global x_coordinate, y1_coordinate, y2_coordinate, y1_colour, y2_colour, ColourFrameY1, ColourFrameY2
+    x_coordinate = tk.Text(coordinate_frame, height=1, width=8, bg="#FDFDFD", font=("Arial",17))
+    x_coordinate.grid(row=1, column=1, columnspan=2)
     x_coordinate.insert(1.0, "   x")
     x_coordinate.config(state="disable")
+
+        
+    y1_coordinate = tk.Text(coordinate_frame, height=1, width=8, bd=0, bg="whitesmoke", font=("Arial",17))
+    y1_coordinate.grid(row=1, column=3, columnspan=2)
+    #y1_coordinate.insert(1.0, "   y₁")
+    y1_coordinate.config(state="disable")
+    y1_colour = tk.Frame(coordinate_frame, height=25, width=25, bg="#626c8d", highlightbackground="#353535", highlightthickness=3)
+    y1_colour.grid(row=1, column=3, pady=4, padx=4, sticky="e")
+    y1_colour.grid_forget()
+    y1_colour.bind("<Button-1>", lambda x: YColour(1))
+    ColourFrameY1 = tk.Frame(coordinate_frame, height=25, width=100, bg="lightgrey")
+    ColourFrameY1.grid(row=2, rowspan=2, column=3, columnspan=2, sticky="ne")
+    ColourFrameY1.grid_forget()
+    ColourEntryY1 = tk.Entry(ColourFrameY1, textvariable=y1_rgb, width=10, font=("Arial",11))
+    ColourEntryY1.grid(row=1, column=1, columnspan=3, pady=3, padx=3, stick="n")
+    ColourEntryY1.bind("<Return>", lambda x: SetYrgb(1))
     
-    y_coordinate = tk.Text(coordinate_frame, height=1, width=4, bg="whitesmoke", font=("Arial",17))
-    y_coordinate.grid(row=1, column=2)
-    y_coordinate.insert(1.0, "   y")
-    y_coordinate.config(state="disable")
+    y2_coordinate = tk.Text(coordinate_frame, height=1, width=8, bd=0, bg="whitesmoke", font=("Arial",17))
+    y2_coordinate.grid(row=1, column=5, columnspan=2)
+    y2_coordinate.config(state="disable")
+    y2_colour = tk.Frame(coordinate_frame, height=25, width=25, bg="#736a58", highlightbackground="#353535", highlightthickness=3)
+    y2_colour.grid(row=1, column=5, pady=4, padx=4, sticky="e")
+    y2_colour.grid_forget()
+    y2_colour.bind("<Button-1>", lambda x: YColour(2))
+    ColourFrameY2 = tk.Frame(coordinate_frame, height=25, width=100, bg="lightgrey")
+    ColourFrameY2.grid(row=2, rowspan=2, column=5, columnspan=2, sticky="ne")
+    ColourFrameY2.grid_forget()
+    ColourEntryY2 = tk.Entry(ColourFrameY2, textvariable=y2_rgb, width=10, font=("Arial",11))
+    ColourEntryY2.grid(row=1, column=1, columnspan=5, pady=3, padx=3, stick="n")
+    ColourEntryY2.bind("<Return>", lambda x: SetYrgb(2))
 
     NewCoordinate()
 
 def NewCoordinate(*args):
+    global ColourFrameY1
     i = len(num_xvalues)
-    num_xvalues.append(str(i+1))
-    num_yvalues.append(str(i+1))
+    num_xvalues.append(f"{i+1}")
+    num_y1values.append(f"{i+1}")
+    num_y2values.append(f"{i+1}")
         
-    num_xvalues[i] = tk.Text(coordinate_frame, height=1, width=4, bg="whitesmoke", font=("Arial", 17))
-    num_xvalues[i].grid(row=i+2, column=1)
-    num_xvalues[i].bind('<KeyPress>',NewCoordinate)
+    num_xvalues[i] = tk.Text(coordinate_frame, height=1, width=8, bg="#FDFDFD", font=("Arial", 17))
+    num_xvalues[i].grid(row=i+2, column=1, columnspan=2)
+    num_xvalues[i].bind('<ButtonRelease-1>',NewCoordinate)
     num_xvalues[i].bind('<KeyRelease>',GetCoordinate)
     num_xvalues[i].bind("<Return>", lambda event: "break")
+    num_xvalues[i].bind("<Button-1>", lambda x: TableXLocation(i))
     
-    num_yvalues[i] = tk.Text(coordinate_frame, height=1, width=4, bg="whitesmoke", font=("Arial", 17))
-    num_yvalues[i].grid(row=i+2, column=2)
-    num_yvalues[i].bind('<KeyPress>',NewCoordinate)
-    num_yvalues[i].bind('<KeyRelease>',GetCoordinate)
-    num_yvalues[i].bind("<Return>", lambda event: "break")
+    
+    num_y1values[i] = tk.Text(coordinate_frame, height=1, width=8, bg="whitesmoke", font=("Arial", 17))
+    num_y1values[i].grid(row=i+2, column=3, columnspan=2)
+    num_y1values[i].bind('<ButtonRelease-1>',NewCoordinate)
+    num_y1values[i].bind('<KeyRelease>',GetCoordinate)
+    num_y1values[i].bind("<Return>", lambda event: "break")
+    num_y1values[i].bind("<Button-1>", lambda x: TableYLocation(i, 1))
+    
+
+
+    num_y2values[i] = tk.Text(coordinate_frame, height=1, width=8, bd=0, bg="whitesmoke", font=("Arial", 17))
+    num_y2values[i].grid(row=i+2, column=5, columnspan=2)
+    num_y2values[i].bind('<ButtonRelease-1>',NewCoordinate)
+    num_y2values[i].bind('<KeyRelease>',GetCoordinate)
+    num_y2values[i].bind("<Return>", lambda event: "break")
+    num_y2values[i].bind("<Button-1>", lambda x: TableYLocation(i, 2))
+
 
     if i > 0:
-        num_xvalues[i-1].unbind('<KeyPress>')
-        num_yvalues[i-1].unbind('<KeyPress>')
+        num_xvalues[i-1].unbind('<ButtonRelease-1>')
+        num_y1values[i-1].unbind('<ButtonRelease-1>')
+        num_y2values[i-1].unbind('<ButtonRelease-1>')
+
+    if Col == "Y2":
+        num_y1values[i].config(bg="#FDFDFD")
+        num_y2values[i].config(bd=1, bg="#FDFDFD")
+    elif Col == "Y1":
+        num_y1values[i].config(bd=1,bg="#FDFDFD")
+        num_y2values[i].config(bd=1)
+        num_y2values[i].bind("<<Modified>>", ActY2)
+    else:
+        num_y1values[i].config(bd=1, bg="whitesmoke")
+        num_y2values[i].config(bd=0, bg="whitesmoke")
+        num_y1values[i].bind("<<Modified>>", ActY1)
+        num_y2values[i].bind("<<Modified>>", ActY2)
+
+    if i==0:
+        ColourFrameY1.lift()
+        ColourFrameY2.lift()
 
 
 def GetCoordinate(*args):
     I = len(num_xvalues)
-    global Xcoordinate, Ycoordinate
+    global Xcoordinate, Y1coordinate, Y2coordinate, y1_rgb, y2_rgb
     Xcoordinate = []
-    Ycoordinate = []
+    Y1coordinate = []
+    Y2coordinate = []
     for i in range(0,I-1):
-        Xcoordinate.append(num_xvalues[i].get("1.0", tk.END).strip())
-        Ycoordinate.append(num_yvalues[i].get("1.0", tk.END).strip())
+        xValues = num_xvalues[i].get("1.0", tk.END).strip()
+        if "π" in xValues:
+            xValues = xValues.replace("π", "3.1415926")
+        y1Values = num_y1values[i].get("1.0", tk.END).strip()
+        y2Values = num_y2values[i].get("1.0", tk.END).strip()
+        if "π" in y1Values:
+            y1Values = y1Values.replace("π", "3.1415926")
+        if "π" in y2Values:
+            y2Values = y2Values.replace("π", "3.1415926")
+        try:
+            xValues = simplify(xValues)
+            y1Values = simplify(y1Values)
+        except: 
+            pass
+        Xcoordinate.append(xValues)
+        Y1coordinate.append(y1Values)
+        try:
+            xValues = simplify(xValues)
+            y2Values = simplify(y2Values)
+        except:
+            pass
+        Y2coordinate.append(y2Values)
+
+        
     try:
         if len(EntryField_list) >= 2:
             GetEquation()
@@ -427,55 +1075,228 @@ def GetCoordinate(*args):
             ax.clear()
             canvas.draw()
             InitialGraph()
-            PlotCoordinate()
+            PlotCoordinate(Xcoordinate,Y1coordinate, y1_rgb.get())
+            PlotCoordinate(Xcoordinate,Y2coordinate, y2_rgb.get())
     except:
         ErrorMsg("Invalid Value Entered")
 
 
-#----------
-#CLEAR content ----
-def clear(*args):
-    global EntryField_list, Appearance_field
-    global num_xvalues, num_yvalues, x_coordinate, y_coordinate
-    for i in range(0, len(EntryField_list)):
-        #EntryField_list[i].delete(1.0,"end")
-        EntryField_list[i].destroy()
-        Appearance_field[i].destroy()
 
-    for i in range(0,len(num_xvalues)):
-        num_xvalues[i].destroy()
-        num_yvalues[i].destroy()
-
-    EntryField_list = ['1']
-    Appearance_field = ['1']
-    Appearance_num = ['1']
-    Equation_list = ['']
-    num_xvalues = ['1']
-    num_yvalues = ['1']
-    Xcoordinate = []
-    Ycoordinate = []
-    InitialField()
-    ax.clear()
-    canvas.draw()
-    InitialGraph()
-    coordinates()
 #----------
+#SYMBOL MENU ------
+open_menu = False
+def ActivateMenu():
+    global open_menu
+    if open_menu == False:
+        SymbolMenu()
+        
+    elif open_menu == True:
+        CloseSymbolMenu()
+        open_menu = False
+        
 def SymbolMenu():
+    global open_menu
+    global symbol
     symbol = tk.Tk()
     symbol.title("Symbol Menu")
-    symbol.geometry("550x600")
+    symbol.geometry("550x610")
     symbol["bg"] = "lightgrey"
     symbol_frame = tk.Frame(symbol,height="585",width="540", bg="whitesmoke")
     symbol_frame.grid(row=1, column=1, padx=5, pady=5)
     SymbolText = tk.Text(symbol, height="26", width="43", bg="whitesmoke")
     SymbolText.grid(row=1, column=1)#, stick="nsew")
-    text=" Operator      Name           Example" + "\n" + "  +            Addition       x+y" + "\n" + "  -            Subtraction    x-y"
-          
-    SymbolText.insert(1.0, text)
-    
+    text_1 =" Operator    Name               Example" + "\n" + "  +          Addition           x+y" + "\n" + "  -          Subtraction        x-y" + "\n"
+    text_2 ="  *          Multiplication     x*y" + "\n" + "  /          Devision           x/y" + "\n" + "  **         Exponentiation     x**y" + "\n" + "  ^          Exponentiation     x^y" + "\n"
+    text_3 ="  sin(x)     sine               sin(x)" + "\n" + "  cos(x)     cosine             cos(x)" + "\n" + "  tan(x)     tangent            tan(x)" + "\n" + "  trig^2     square             sin(x)^2" + "\n"
+    text_4 ="  ^(1/2)     square root        x^(1/2)" + "\n" + "  ^(1/□)     root               x^(1/5)" + "\n"          
+    text_5 ="  exp(□)     exponential        exp(x)" + "\n" + "  ln(□)      natural logarithm  ln(x)" + "\n"
+    text_6 ="  log(□)     logarithm          log10(x)" + "\n" + "  log□(□)    logarithm base□    log2(x)" + "\n" + "  |x|        absolute value     |x|" + "\n" + "  abs(x)     absolute value     abs(x)" + "\n"
+
+    SymbolText.insert(1.0, text_6)
+    SymbolText.insert(1.0, text_5)
+    SymbolText.insert(1.0, text_4)
+    SymbolText.insert(1.0, text_3)
+    SymbolText.insert(1.0, text_2)
+    SymbolText.insert(1.0, text_1)
+
+    open_menu = True
     symbol.mainloop()
+
+    
+    
+def CloseSymbolMenu():
+    global open_menu
+    global symbol
+    try:
+        symbol.destroy()
+    except:
+        pass
+    open_menu = False
+    
+    
+#--------------
+#CLEAR content ----
+def clear(*args):
+    global EntryField_list, Appearance_field, Line_list, Point, ColorSetting, LineStyleSetting
+    global num_xvalues, num_y1values, num_y2values, x_coordinate, y_coordinate, Col, Y1coordinate, Y2coordinate
+    global Xintercept, Yintercept, plotforinter
+    for i in range(0, len(EntryField_list)):
+        #EntryField_list[i].delete(1.0,"end")
+        EntryField_list[i].destroy()
+        Appearance_field[i].destroy()
+        Line_list[i].destroy()
+    Col="x"
+    for i in range(0,len(num_xvalues)):
+        num_xvalues[i].destroy()
+        num_y1values[i].destroy()
+        num_y2values[i].destroy()
+    y1_coordinate.config(bd=0)
+    y2_coordinate.config(bd=0)
     
 
+    ColorSetting.remove('')
+    LineStyleSetting.remove('')
+    for i in range(0,len(ColorSetting)):
+        try:
+            ColorSetting[i].destroy()
+        except:
+            pass
+    for i in range(0, len(LineStyleSetting)):
+        try:
+            LineStyleSetting[i].destroy()
+        except:
+            pass
+
+    EntryField_list = ['1']
+    Appearance_field = ['1']
+    Appearance_num = ['1']
+    Equation_list = ['']
+    Line_list = ['1']
+    num_xvalues = []
+    num_y1values = []
+    num_y2values = []
+    Xcoordinate = []
+    Y1coordinate = []
+    Y2coordinate = []
+    Point = []
+    Colour_block = ['']
+    ColorSetting = ['']
+    Colour_list = [''] 
+    COLOUR = []
+    COLOUR.append(tk.StringVar(root, value='#000000'))
+    Style_block = ['']
+    Style_list = ['solid']
+    Style_choice = ['']
+    LineStyleSetting = ['']
+    OpenColour = [False]
+    Style_list = ['']
+    line_setting.grid_forget()
+    plotforinter = False
+    Xintercept = []
+    Yintercept = []
+    LabelX.set("x axis")
+    LabelY.set("y axis")
+    InitialField()
+    ax.clear()
+    canvas.draw()
+    InitialGraph()
+    coordinates()
+
+
+
+#store function -------
+def StoreCSV(*args):
+    Store_list=[]
+    for i in range(0,len(EntryField_list)-1):
+        Equation_list[i] = EntryField_list[i].get(1.0, tk.END).strip()
+        if Equation_list[i] != "":
+            Store_list.append(Equation_list[i])
+    #print(Store_list)
+
+    for i in range(0,len(num_xvalues)-1):
+        Xcoordinate[i] = num_xvalues[i].get("1.0", tk.END).strip()
+        Y1coordinate[i] = num_y1values[i].get("1.0", tk.END).strip()
+        Y2coordinate[i] = num_y2values[i].get("1.0", tk.END).strip()
+        
+    # Open the save file dialog to choose the file location and name
+    file_path = filedialog.asksaveasfilename(defaultextension=".csv", filetypes=[("CSV files", "*.csv")])
+    
+    if file_path:  # Proceed if the user selected a file location
+        # Write data to the selected file
+        with open(file_path, mode='w', newline='') as file:
+            writer = csv.writer(file)
+            writer.writerow(["Equation:"])
+            for content in Store_list:
+                writer.writerow([content])
+                #print(content)
+            writer.writerow(["TableX:"])
+
+            for content in Xcoordinate:
+                writer.writerow([content])
+            writer.writerow(["TableY1:"])
+            for content in Y1coordinate:
+                writer.writerow([content])
+            writer.writerow(["TableY2:"])
+            for content in Y2coordinate:
+                writer.writerow([content])
+                
+        
+        print(f"CSV file saved as: {file_path}")
+        
+
+
+# Column variable to keep track of which section (Equation, TableX, or TableY) is currently being read
+column = "Equation"
+def OpenCSV(*args):
+    # Open a file dialog to select a CSV file
+    file_path = filedialog.askopenfilename(title="Open CSV file", filetypes=[("CSV files", "*.csv")])
+    print(f"CSV file opend from: {file_path}")
+    clear() # Clear previous data in the application
+    EntryField_list[0].delete("1.0", tk.END)
+    if file_path:
+        with open(file_path, mode="r") as file: # Open the CSV file in read mode
+            reader = csv.reader(file)
+            I1 = 0 #Index variable for num_y1values entries
+            I2 = 0
+            for row in reader:
+                if row==['Equation:']:
+                    column="Equation"
+                elif row==['TableX:']:
+                    column="TableX"
+                elif row==['TableY1:']:
+                    column="TableY1"
+                elif row==['TableY2:']:
+                    column="TableY2"
+                elif column=="Equation":
+                    if row != [""]:
+                        i = len(EntryField_list)
+                        EntryField_list[i-1].insert("1.0", row)
+                        newField()
+                elif column=="TableX":
+                    i = len(num_xvalues)
+                    if row == [""]:
+                        num_xvalues[i-1].insert("1.0", "")
+                    else:
+                        num_xvalues[i-1].insert("1.0", row)
+                    NewCoordinate()
+                elif column=="TableY1":
+                    if row == [""]:
+                        num_y1values[I1].insert("1.0", "")
+                    else:
+                        num_y1values[I1].insert("1.0", row)
+                    I1 += 1
+                elif column =="TableY2":
+                    if row == [""]:
+                        num_y2values[I2].insert("1.0", "")
+                    else:
+                        num_y2values[I2].insert("1.0", row)
+                    I2 += 1
+    GetCoordinate()
+
+
+    
+
+#------------
 #FRAMES ---------
 #1. equations
 scroll_canvas = Canvas(root, height="500", width="400", bg="whitesmoke")
@@ -484,7 +1305,7 @@ scroll_canvas.grid_propagate(False)
 
 
 field_frame = tk.Frame(scroll_canvas)
-field_frame.grid(row=1,column=1,sticky="nwes")
+field_frame.grid(row=1,column=1, sticky="nwes")
 field_frame.bind("<Configure>", lambda e:scroll_canvas.configure(scrollregion=scroll_canvas.bbox("all")))
 scroll_canvas.create_window((0,0), window=field_frame,anchor="nw")
 #field_frame.bind("<Button-1>", lambda x: print('scroll'))
@@ -518,11 +1339,43 @@ h_table.grid(row=6, column=1, columnspan=8, stick="sew", pady=4)
 h_table.grid_forget()
 h_table.config(command=scroll_table.xview)
 scroll_table.config(xscrollcommand=h_table.set)
+coordinates()
 
 #3. graph 
-graph_frame = tk.Frame(root, height="500", width="500", bg="pink")
+graph_frame = tk.Frame(root, height="500", width="500", bg="silver")
 graph_frame.grid(row=1, column=9, rowspan=6, columnspan=10, padx=5, pady=4)
 graph_frame.grid_propagate(False)
+#SET UP GRAPH -----
+plt.style.use('_mpl-gallery')
+fig,ax = plt.subplots()
+fig = Figure(figsize=(5, 4.25))
+ax = fig.add_subplot(111)
+
+canvas = FigureCanvasTkAgg(fig, master = graph_frame)
+canvas.get_tk_widget().grid(row=1, rowspan=5, column=1, columnspan=5)
+canvas.get_tk_widget().bind("<Button-1>", OnDrag)
+canvas.get_tk_widget().bind("<B1-Motion>", drag_graph)
+canvas.get_tk_widget().bind("<ButtonRelease-1>", UpdateDrag)
+canvas.get_tk_widget().grid_propagate(False)
+toolbar=NavigationToolbar2Tk(canvas,graph_frame, pack_toolbar=False)
+toolbar.update()
+toolbar.grid(row=6, column=1, columnspan=5, pady=5, sticky="ew")
+
+control_graph = tk.Frame(graph_frame, height=602, width=502, bg="whitesmoke", highlightbackground="grey", highlightthickness=2)
+control_graph.grid(row=3, rowspan=3, column=3, columnspan=3)
+SetGraph_Entries()
+
+line_setting = tk.Frame(graph_frame, height=203, width=423, bg="whitesmoke", highlightbackground="grey", highlightthickness=3)
+line_setting.grid(row=2, rowspan=3, column=2, columnspan=3)
+line_setting.grid_propagate(False)
+lineFrame()
+
+
+    
+#SAVE ------------
+def ExportGraph():
+    toolbar.save_figure()
+
 
 #4. menubar
 top_bar = tk.Frame(root, height="40", width="930", bg="dimgrey")
@@ -535,17 +1388,17 @@ error_message.grid(row=0, column=18)
 option_button = tk.Menubutton(top_bar, text="OPTION", width=7, font=("Arial",12,"bold"), bg="dimgrey", fg="white", relief="raised")
 option_button.grid(row=0, rowspan=2, column=0, padx=5, pady=5)
 option_menu = Menu(option_button, tearoff=0, bg="#e6e6e6", font=12)
-option_menu.add_command(label="Clear", command=clear)
-option_menu.add_command(label="Open")
-option_menu.add_command(label="Save As")
+option_menu.add_command(label="Clear Graph", command=clear)
+option_menu.add_command(label="Open File", command=lambda: OpenCSV())
+option_menu.add_separator()
+option_menu.add_command(label="Export Graph", command=lambda: ExportGraph())
+option_menu.add_command(label="Save Formula", command=lambda: StoreCSV())
 option_button.config(menu=option_menu)
 
 TGraph_button = tk.Menubutton(top_bar, text="EQUATION", width=10, font=("Arial",12, "bold"), bg="dimgrey", fg="white", relief="raised")
 TGraph_button.grid(row=0, rowspan=2, column=1, padx=5, pady=5)
 TGraph_menu = Menu(TGraph_button, tearoff=0, bg="#e6e6e6", font=12)
 TGraph_menu.add_command(label="Table", command=ShowTable)
-#TGraph_menu.add_separator()
-#TGraph_menu.add_command(label="scatter graph")
 TGraph_button.config(menu=TGraph_menu)
 
 unit = tk.StringVar()
@@ -553,85 +1406,120 @@ unit.set("Degree")
 unit_button = tk.Menubutton(top_bar, text="UNIT", width=5, font=("Arial",12, "bold"), bg="dimgrey", fg="white", relief="raised")
 unit_button.grid(row=0, rowspan=2, column=2, padx=3, pady=5)
 unit_menu = Menu(unit_button, tearoff=0, bg="#e6e6e6", font=12)
-unit_menu.add_radiobutton(label="Radian", variable=unit, value="Radian", command=GetEquation)
-unit_menu.add_radiobutton(label="Degree", variable=unit, value="Degree", command=GetEquation)
+unit_menu.add_radiobutton(label="Radian", variable=unit, value="Radian", command=ChangeRadian)
+unit_menu.add_radiobutton(label="Degree", variable=unit, value="Degree", command=ChangeDegree)
 unit_button.config(menu=unit_menu)
+
 
 Setting_button = tk.Button(top_bar, text="SETTING", command=SetGraph, width=7, font=("Arial", 12, "bold"), bg="dimgrey", fg="white")
 Setting_button.grid(row=0, rowspan=2, column=3, padx=3, pady=5)
 
-Symbol_button = tk.Button(top_bar, text="SYMBOL MENU", command=SymbolMenu, width=12, font=("Arial", 12, "bold"), bg="dimgrey", fg="white")
+Symbol_button = tk.Button(top_bar, text="SYMBOL MENU", command=ActivateMenu, width=12, font=("Arial", 12, "bold"), bg="dimgrey", fg="white")
 Symbol_button.grid(row=0, rowspan=2, column=4, padx=3, pady=5)
 
-#SET UP GRAPH -----
-plt.style.use('_mpl-gallery')
-fig,ax = plt.subplots()
-fig = Figure(figsize=(5, 5.5))
-ax = fig.add_subplot(111)
+Intercept_button = tk.Button(top_bar, text="INTERCEPTION", command=PlotIntercept, width=12, font=("Arial", 12, "bold"), bg="dimgrey", fg="white")
+Intercept_button.grid(row=0, rowspan=2, column=5, padx=3, pady=5)
 
-canvas = FigureCanvasTkAgg(fig, master = graph_frame)
-canvas.get_tk_widget().grid(row=1, rowspan=5, column=1, columnspan=5)
-canvas.get_tk_widget().bind("<B1-Motion>", drag_graph)
-canvas.get_tk_widget().bind("<Button-1>", OnDrag)
-canvas.get_tk_widget().bind("<ButtonRelease-1>", UpdateDrag)
-toolbar=NavigationToolbar2Tk(canvas,graph_frame, pack_toolbar=False)
-toolbar.update()
-toolbar.grid(row=6, column=1, columnspan=5, pady=2, sticky="ew")
-
-ControlGraph_Frame = tk.Frame(graph_frame, height=200, width=250, bg="grey")
-ControlGraph_Frame.grid(row=2, rowspan=3, column=2, columnspan=3)
-control_graph = tk.Frame(ControlGraph_Frame, height=400, width=500, bg="whitesmoke")
-control_graph.grid(row=1, rowspan=3, column=1, columnspan=3, padx=2, pady=2)
 
 #Add To Calculation------
 calculation = ""
+value = ""
 def AddValue(symbol):
-    calculation = EntryField_list[location].get("1.0", tk.END).strip()
-    print("previous: ", calculation)
-    calculation += symbol
-    print("after: ", calculation)
-    EntryField_list[location].delete(1.0, "end")
-    EntryField_list[location].insert(1.0, calculation)
-    GetEquation()
+    if page == "EQUATION":
+        calculation = EntryField_list[location].get("1.0", tk.END).strip()
+        #print("previous: ", calculation)
+        calculation += symbol
+        #print("after: ", calculation)
+        EntryField_list[location].delete(1.0, "end")
+        EntryField_list[location].insert(1.0, calculation)
+        GetEquation()
+    elif page == "TABLE":
+        if table == "x":
+            value = num_xvalues[table_location].get("1.0", tk.END).strip()
+            value += symbol
+            num_xvalues[table_location].delete(1.0, "end")
+            num_xvalues[table_location].insert(1.0, value)
+            GetCoordinate()
+        elif table == "y1":
+            value = num_y1values[table_location].get("1.0", tk.END).strip()
+            value += symbol
+            num_y1values[table_location].delete(1.0, "end")
+            num_y1values[table_location].insert(1.0, value)
+            GetCoordinate()
+        elif table == "y2":
+            value = num_y2values[table_location].get("1.0", tk.END).strip()
+            value += symbol
+            num_y2values[table_location].delete(1.0, "end")
+            num_y2values[table_location].insert(1.0, value)
+            GetCoordinate()
 
 def DelValue():
-    calculation = EntryField_list[location].get("1.0", tk.END).strip()
-    print("previous: ", calculation)
-    if calculation[len(calculation)-4:len(calculation)] == "sin(" or calculation[len(calculation)-4:len(calculation)] == "cos(" or calculation[len(calculation)-4:len(calculation)] == "tan(":
-        calculation = calculation[0:len(calculation)-4]
-    elif calculation[len(calculation)-4:len(calculation)] == "f(x)" or calculation[len(calculation)-4:len(calculation)] == "g(x)" or calculation[len(calculation)-4:len(calculation)] == "h(x)":
-        calculation = calculation[0:len(calculation)-4]
-    elif calculation[len(calculation)-3:len(calculation)] == "ln(":
-        calculation = calculation[0:len(calculation)-3]
-    elif calculation[len(calculation)-4:len(calculation)] == "log(" or calculation[len(calculation)-4:len(calculation)] == "exp(":
-        calculation = calculation[0:len(calculation)-4]
-    else:
-        calculation = calculation[0: len(calculation)-1]
-    print("after: ", calculation)
-    EntryField_list[location].delete(1.0, "end")
-    EntryField_list[location].insert(1.0, calculation)
-    GetEquation()
+    if page == "EQUATION":
+        calculation = EntryField_list[location].get("1.0", tk.END).strip()
+        if calculation[len(calculation)-4:len(calculation)] == "sin(" or calculation[len(calculation)-4:len(calculation)] == "cos(" or calculation[len(calculation)-4:len(calculation)] == "tan(":
+            calculation = calculation[0:len(calculation)-4]
+        elif calculation[len(calculation)-4:len(calculation)] == "f(x)" or calculation[len(calculation)-4:len(calculation)] == "g(x)" or calculation[len(calculation)-4:len(calculation)] == "h(x)":
+            calculation = calculation[0:len(calculation)-4]
+        elif calculation[len(calculation)-3:len(calculation)] == "ln(":
+            calculation = calculation[0:len(calculation)-3]
+        elif calculation[len(calculation)-4:len(calculation)] == "log(" or calculation[len(calculation)-4:len(calculation)] == "exp(":
+            calculation = calculation[0:len(calculation)-4]
+        else:
+            calculation = calculation[0: len(calculation)-1]
+        EntryField_list[location].delete(1.0, "end")
+        EntryField_list[location].insert(1.0, calculation)
+        GetEquation()
+    elif page == "TABLE":
+        if table == "x":
+            value = num_xvalues[table_location].get("1.0", tk.END).strip()
+            value = value[0:len(value)-1]
+            num_xvalues[table_location].delete(1.0, "end")
+            num_xvalues[table_location].insert(1.0, value)
+        elif table == "y1":
+            value = num_y1values[table_location].get("1.0", tk.END).strip()
+            value = value[0:len(value)-1]
+            num_y1values[table_location].delete(1.0, "end")
+            num_y1values[table_location].insert(1.0, value)
+        elif table == "y2":
+            value = num_y2values[table_location].get("1.0", tk.END).strip()
+            value = value[0:len(value)-1]
+            num_y2values[table_location].delete(1.0, "end")
+            num_y2values[table_location].insert(1.0, value)
+        GetCoordinate()
+        
+
 
 def ClearValue():
-    calculation = EntryField_list[location].get("1.0", tk.END).strip()
-    print("previous: ", calculation)
-    EntryField_list[location].delete(1.0,"end")
-    calculation = ""
-    print("after: ", calculation)
+    if page == "EQUATION":
+        EntryField_list[location].delete(1.0,"end")
+    elif page == "TABLE":
+        if table == "x":
+            num_xvalues[table_location].delete("1.0", "end")
+        elif table == "y1":
+            num_y1values[table_location].delete("1.0", "end")
+        elif table == "y2":
+            num_y2values[table_location].delete("1.0", "end")
+        
+        
     
-#KeyBoard -------
-Keyboard_Canvas = tk.Frame(root, height="225", width="925", bg="lightblue")
-Keyboard_Canvas.grid(row=6, rowspan=3, column=0, columnspan=20)#, stick="ew")
-Keyboard_Canvas.grid_propagate(False)
 
-functions_frame = tk.Frame(Keyboard_Canvas, height="210", width="400", bg="pink")
-functions_frame.grid(row=1, rowspan=4, column=1, columnspan=4, padx=5, pady=10)
+#KeyBoard -------
+Keyboard_Shading = tk.Frame(root, height="192", width="927", bg="grey43")
+Keyboard_Shading.grid(row=6, rowspan=3, column=0, columnspan=20)
+Keyboard_Shading.grid_propagate(False)
+Keyboard_Canvas = tk.Frame(Keyboard_Shading, height="190", width="925", bg="#ebe7e6")
+Keyboard_Canvas.grid(row=6, rowspan=3, column=0, columnspan=20, padx=2, pady=2)
+Keyboard_Canvas.grid_propagate(False)
+#Keyboard_Shading.grid_forget()
+
+functions_frame = tk.Frame(Keyboard_Canvas, height="180", width="400", bg="#f0eae9")
+functions_frame.grid(row=1, rowspan=4, column=1, columnspan=4, padx=5, pady=5)
 functions_frame.grid_propagate(False)
-numbers_frame = tk.Frame(Keyboard_Canvas, height="210", width="393", bg="pink")
-numbers_frame.grid(row=1, rowspan=4, column=5, columnspan=3, padx=5, pady=10)
+numbers_frame = tk.Frame(Keyboard_Canvas, height="180", width="393", bg="#f0eae9")
+numbers_frame.grid(row=1, rowspan=4, column=5, columnspan=3, padx=5, pady=5)
 numbers_frame.grid_propagate(False)
-general_frame = tk.Frame(Keyboard_Canvas, height="210", width="100", bg="pink")
-general_frame.grid(row=1, rowspan=4, column=8, columnspan=3, padx=5, pady=10)
+general_frame = tk.Frame(Keyboard_Canvas, height="180", width="100", bg="#f0eae9")
+general_frame.grid(row=1, rowspan=4, column=8, columnspan=3, padx=5, pady=5)
 general_frame.grid_propagate(False)
 
 btn_sin = tk.Button(functions_frame, text="sin", command=lambda: AddValue("sin("), height=2, width=10, font=("Arial",9))
@@ -673,6 +1561,14 @@ btn_square = tk.Button(functions_frame, text="x²", command=lambda: AddValue("^2
 btn_square.grid(row=4,column=2)
 btn_cube = tk.Button(functions_frame, text="x³", command=lambda:AddValue("^3"), height=2, width=10, font=("Arial",9))
 btn_cube.grid(row=4, column=3)
+btn_abs = tk.Button(functions_frame, text="|x|", command=lambda:AddValue("|"), height=2, width=10, font=("Arial", 9))
+btn_abs.grid(row=4, column=4)
+btn_pi = tk.Button(functions_frame, text="π", command=lambda:AddValue("π"), height=2, width=10, font=("Arial", 9))
+btn_pi.grid(row=4, column=5)
+btn_blank = tk.Button(functions_frame, text="", height=1, width=130, font=("Arial",4))
+btn_blank.grid(row=5, column=1, columnspan=5)
+btn_blank.config(state=tk.DISABLED)
+
 #²π
 
 btn_7 = tk.Button(numbers_frame, text="7", command=lambda: AddValue("7"), height=2, width=11, font=("Arial",10))
@@ -714,19 +1610,43 @@ btn_delete.grid(row=1,column=1)
 btn_clear = tk.Button(general_frame, text="CLEAR", command=lambda:ClearValue(), height=2, width=11, font=("Arial", 10))
 btn_clear.grid(row=2, column=1)
 
-#scroll_canvas.config(height="350")
-#scroll_table.config(height="350")
-#canvas.get_tk_widget().config(height="300")
+btn_hide = tk.Button(general_frame, text="▼", command=lambda:HideKeyBoard(), height=2, width=11, font=("Arial", 10))
+btn_hide.grid(row=4, column=1, pady=43)
+
+btn_show = tk.Button(root, text="▲", command=lambda:ShowKeyBoard(), height=2, width=11, font=("Arial", 10))
+btn_show.grid(row=6, column=18, columnspan=2, padx=12, pady=3, stick="es")
+btn_show.grid_forget()
+
+
+def HideKeyBoard():
+    Keyboard_Shading.config(height="30")
+    Keyboard_Shading.grid(row=6, column=0, columnspan=20,pady = 4, stick="s")
+    btn_show.grid(row=6, column=18, columnspan=2, padx=12, pady=3, stick="es")
+
+def ShowKeyBoard():
+    Keyboard_Shading.config(height="192")
+    Keyboard_Shading.grid(row=6, rowspan=3, column=0, columnspan=20)
+    btn_show.grid_forget()
+    
+
 
 #ARRAY FOR EQUATION FIELDS ----
 EntryField_list = ['1']
 Appearance_field = ['1']
 Appearance_num = ['1']
+Colour_block = ['']
+ColorSetting = ['']
+Colour_list = ["#4f5f9c"]
+Style_list = ["solid"]
+Style_block = ['']
+Style_choice = ['']
+LineStyleSetting = ['']
 Equation_list = ['']
+Line_list = ['1']
 
 #--------
 
+
 InitialField()
 InitialGraph()
-coordinates()
 root.mainloop()
