@@ -911,6 +911,7 @@ def PlotCoordinate(Xlist, Ylist, colour):
     y = 0
     InitialGraph()
     #print(Xlist)
+
     for i in range(0,len(Xlist)):
         try:
             x = float(Xlist[i])
@@ -922,7 +923,6 @@ def PlotCoordinate(Xlist, Ylist, colour):
             else:
                 ErrorMsg("Table: Invalid expression")
         canvas.draw()
-
 
        
         
@@ -1106,6 +1106,7 @@ line2 = None
 
 def PlotFit(column):
     global line1, line2, fitLine
+    global y1_rgb, y2_rgb
     print("plotted")
     X1list = coordOOP.get_x().copy()
     X2list = coordOOP.get_x().copy()
@@ -1165,6 +1166,10 @@ def PlotFit(column):
         print(a, b)
         x = np.linspace(-10,20,300)
         T = a*np.exp(b*x)
+    elif fitLine.get() == "SCATTER":
+        x = X
+        y = Y
+        
         
 
     if line1 and column == "Y1": #remove the previous one before the new one
@@ -1172,12 +1177,22 @@ def PlotFit(column):
     if line2 and column == "Y2":
         line2.remove()
 
-    if column=="Y1":
-        line1, = ax.plot(x, T, '-', label="y1")
-    elif column=="Y2":
-        line2, = ax.plot(x, T, '-', label="y2")
+        
+    if column=="Y1": #for y1
+        if fitLine.get() == "SCATTER": #scatter graph
+            line1, = ax.plot(x, y, color=y1_rgb.get(), label="y1") 
+        else:
+            line1, = ax.plot(x, T, '-', label="y1")
+    elif column=="Y2": #for y2
+        if fitLine.get() == "SCATTER": #scatter graph
+            line2, = ax.plot(x, y, color=y2_rgb.get(), label="y2")
+        else:
+            line2, = ax.plot(x, T, '-', label="y2")
     ax.legend()
     canvas.draw()
+
+
+    
     
 
 def GetCoordinate(*args):
@@ -1588,7 +1603,8 @@ bestFit_menu.add_radiobutton(label="Linear", variable=fitLine, value="LINEAR")
 bestFit_menu.add_radiobutton(label="Quadratic", variable=fitLine, value="QUADRATIC")
 bestFit_menu.add_radiobutton(label="Cubic", variable=fitLine, value="CUBIC")
 bestFit_menu.add_radiobutton(label="Exponential", variable=fitLine, value="EXPONENTIAL")
-
+bestFit_menu.add_separator()
+bestFit_menu.add_radiobutton(label="Scatter", variable=fitLine, value="SCATTER")
 
 
 #Add To Calculation------
