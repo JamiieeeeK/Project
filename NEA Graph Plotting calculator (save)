@@ -17,6 +17,32 @@ root.geometry("930x700")
 root["bg"] = "lightgrey"
 
 
+#COORDINATE OOP -----
+class coordOOP:
+    Xcoordinate = []
+    Y1coordinate = []
+    Y2coordinate = []
+
+    @classmethod
+    def set_x(cls,x):
+        cls.Xcoordinate = x
+    @classmethod
+    def set_y1(cls,y1):
+        cls.Y1coordinate = y1
+    @classmethod
+    def set_y2(cls,y2):
+        cls.Y2coordinate = y2
+
+    @classmethod
+    def get_x(cls):
+        return cls.Xcoordinate
+    @classmethod
+    def get_y1(cls):
+        return cls.Y1coordinate
+    @classmethod
+    def get_y2(cls):
+        return cls.Y2coordinate
+
 #EQUATION -----
 location = 0
 def Location(i):
@@ -196,80 +222,76 @@ ymin = -1.5
 ymax = 1.5
 dragx = 0
 dragy = 0
+DoMin = -90
+DoMax = 360
+RaMin = -2
+RaMax = 2
 
 def InitialGraph():
-    control_graph.grid_forget()
+    control_graph.grid_forget() #hide setting
     global setting
     global dragx, dragy
+    global DoMin, DoMax, RaMin, RaMax
     setting = False
 
+    #initial axis location
     ax.spines[['left','bottom']].set_position('zero')
     ax.spines[['right','top']].set_visible(False)
     plt.grid()
 
-    xmin=-90
-    xmax=360
-    if unit.get() == 'Radian':
+    #set up the default values
+    if unit.get() == 'Radian': #for radian
         xmin = -2*np.pi
         xmax = 4*np.pi
         ax.xaxis.set_major_locator(MultipleLocator(base=np.pi))
         ax.xaxis.set_major_formatter(FuncFormatter(format_func))
         ax.tick_params(axis='x', direction='inout', length=4, width=1, colors='black')
-    elif unit.get() == 'Degree':
+    elif unit.get() == 'Degree': #for degree
         xmin = -90
         xmax = 360
-        
+
+    #range value is the same for different unit
     ymin = -5
     ymax = 5
+
     dragx = dragx/2.5
     dragy = dragy/2.5
-    
-    try:
-        float(DomainMin.get())
-        float(DomainMax.get())
-        float(RangeMin.get())
-        float(RangeMax.get())
-        ax.set(xlim=(float(DomainMin.get())-dragx, float(DomainMax.get())-dragx), ylim=(float(RangeMin.get())+dragy, float(RangeMax.get())+dragy))
-        error_message.config(text="")
-        xValue_slider.configure(from_=float(DomainMin.get())-dragx, to=float(DomainMax.get())-dragx)
 
-        if float(RangeMin.get())+dragy >= 0:
-            ax.spines['top'].set_position(('axes',0.00))
-            ax.spines['top'].set_visible(True)
-            ax.spines['bottom'].set_visible(False)
-            ax.xaxis.set_ticks_position("top")
-            ax.xaxis.set_label_position("top")
-        elif float(RangeMin.get())+dragy < 0:
-            ax.spines['bottom'].set_visible(True)
-            ax.spines['top'].set_visible(False)
-            ax.xaxis.set_ticks_position("bottom")
-            ax.xaxis.set_label_position("bottom")
-        if float(RangeMax.get())+dragy <= 0:
-            ax.spines['bottom'].set_position(('axes',1.00))
+    #set the axis to the correct range     
+    ax.set(xlim=(DoMin-dragx, DoMax-dragx), ylim=(RaMin+dragy, RaMax+dragy))
+    xValue_slider.configure(from_=DoMin-dragx, to=DoMax-dragx)
 
-        if float(DomainMin.get())-dragx >= 0:
-            ax.spines['right'].set_position(('axes', 0.00))
-            ax.spines['right'].set_visible(True)
-            ax.spines['left'].set_visible(False)
-            ax.yaxis.set_ticks_position("right")
-            ax.yaxis.set_label_position("right")
-        elif float(DomainMin.get())-dragx <0:
-            ax.spines['left'].set_visible(True)
-            ax.spines['right'].set_visible(False)
-            ax.yaxis.set_ticks_position("left")
-            ax.yaxis.set_label_position("left")
-        if float(DomainMax.get())-dragx <= 0:
-            ax.spines['left'].set_position(('axes', 1.00))
 
-    except:
-        DomainMin.set(round((xmin),1))
-        DomainMax.set(round((xmax),1)) 
-        RangeMin.set(ymin)
-        RangeMax.set(ymax)
-        ax.set(xlim=(xmin, xmax), ylim=(ymin, ymax))
-        ErrorMsg("wrong format entered")
-        xValue_slider.configure(from_=xmin, to=xmax)
+    #set the axises to the correct position according to the graph 
+    if RaMin+dragy >= 0: #x axis stick to the bottom
+        ax.spines['top'].set_position(('axes',0.00))
+        ax.spines['top'].set_visible(True)
+        ax.spines['bottom'].set_visible(False)
+        ax.xaxis.set_ticks_position("top")
+        ax.xaxis.set_label_position("top")
+    elif RaMin+dragy < 0: #x axis locate normally at 0
+        ax.spines['bottom'].set_visible(True)
+        ax.spines['top'].set_visible(False)
+        ax.xaxis.set_ticks_position("bottom")
+        ax.xaxis.set_label_position("bottom")
+    if RaMax+dragy <= 0: #x axis stick to the top
+        ax.spines['bottom'].set_position(('axes',1.00))
+        
+    if DoMin-dragx >= 0: #y axis stick to the left
+        ax.spines['right'].set_position(('axes', 0.00))
+        ax.spines['right'].set_visible(True)
+        ax.spines['left'].set_visible(False)
+        ax.yaxis.set_ticks_position("right")
+        ax.yaxis.set_label_position("right")
+    elif DoMin-dragx <0: #y axis locate normally at 0
+        ax.spines['left'].set_visible(True)
+        ax.spines['right'].set_visible(False)
+        ax.yaxis.set_ticks_position("left")
+        ax.yaxis.set_label_position("left")
+    if DoMax-dragx <= 0: #y axis stick to the right
+        ax.spines['left'].set_position(('axes', 1.00))
 
+    #set up the axis label
     ax.set_xlabel(str(LabelX.get()) + "     ", loc="right")
     ax.set_ylabel(str(LabelY.get()) + "   ", loc="top")
     canvas.draw()
@@ -284,7 +306,7 @@ def ChangeRadian(*args):
     DomainMax.set(round((4*np.pi),1))
     RangeMin.set(-2)
     RangeMax.set(2)
-    GetEquation()
+    SetDoRan()
 
 
 def ChangeDegree(*args):
@@ -292,7 +314,7 @@ def ChangeDegree(*args):
     DomainMax.set(360)
     RangeMin.set(-2)
     RangeMax.set(2)
-    GetEquation()
+    SetDoRan()
 
 
 #TRIG? ----
@@ -321,10 +343,10 @@ def Graph2(Equation, SolveFor, colour, style):
     global y_vals, x_vals, DomainMin, DomainMax
     x_vals = []
     y_vals = []
-    xMin = int(round(float(DomainMin.get()),0))-10
-    xMax = int(round(float(DomainMax.get()),0))+10
-    yMin = int(round(float(RangeMin.get()),0))-10
-    yMax = int(round(float(RangeMax.get()),0))+10
+    xMin = int(round(DoMin,0))-10
+    xMax = int(round(DoMax,0))+10
+    yMin = int(round(RaMin,0))-10
+    yMax = int(round(RaMax,0))+10
     linspaceX = (xMax-xMin)*200
     linspaceY = (yMax-yMin)*200
     plotted = False
@@ -415,15 +437,15 @@ def PtOfIntercept(expr, solve_for):
         Yintercept.append(Yintercept_pt)
         #for y = 0
         eq = sp.factor(expr)
-        domainMin = float(DomainMin.get()) #get the domain values
-        domainMax = float(DomainMax.get())
-        print(domainMax) #variable check
+        domainMin = DoMin #get the domain values
+        domainMax = DoMax
+        #print(domainMax) #variable check
         if unit.get() == "Degree" and is_trig(eq) == True: #convert into radian if is degree
             domainMin = sp.rad(domainMin)
             domainMax = sp.rad(domainMax)
-        print(domainMin) #variable check
+        #print(domainMin) #variable check
         Xintercept_pts = list(sp.solveset(sp.Eq(eq,0),x, domain=sp.Interval(domainMin, domainMax)))
-        print(Xintercept_pts)
+        #print(Xintercept_pts)
         for i in range(0, len(Xintercept_pts)):
             item = Xintercept_pts[i]
             if not item.is_real:
@@ -447,7 +469,6 @@ def PtOfIntercept(expr, solve_for):
         Xintercept = ChangePi(Xintercept)
         #print("caught")
         
-
 
 
         
@@ -498,8 +519,10 @@ def GetEquation(*args):
         PlotCoordinate(Xintercept, Yintercept, "black")
 
     if len(num_xvalues) >= 2:
-        PlotCoordinate(Xcoordinate, Y1coordinate, y1_rgb.get())
-        PlotCoordinate(Xcoordinate, Y2coordinate, y2_rgb.get())
+        PlotCoordinate(coordOOP.get_x(), coordOOP.get_y1(), y1_rgb.get())
+        PlotCoordinate(coordOOP.get_x(), coordOOP.get_y2(), y2_rgb.get())
+        #print(Xcoordinate, Y1coordinate)
+                
     else:
         pass
 
@@ -745,6 +768,27 @@ LabelX.set("x axis")
 LabelY = tk.StringVar(root)
 LabelY.set("y axis")
 
+def SetDoRan(*args):
+    global DoMin, DoMax, RaMin, RaMax
+    try:
+        DoMin = float(DomainMin.get())
+        DoMax = float(DomainMax.get())
+        RaMin = float(RangeMin.get())
+        RaMax = float(RangeMax.get())
+        print(RaMin)
+        GetEquation()
+    except:
+        if unit.get() == 'Radian':
+            DomainMin.set(round((-2*np.pi),1))
+            DomainMax.set(round((4*np.pi),1)) 
+        elif unit.get() == 'Degree':
+            DomainMin.set(-90.0)
+            DomainMax.set(360.0)
+        RangeMin.set(-5)
+        RangeMax.set(5)
+        SetDoRan()
+
+
 setting = False
 def SetGraph():
     global setting
@@ -761,65 +805,75 @@ def SetGraph_Entries():
     DomainMin_label.grid(row=0, column=1, padx=10)
     domain_min_entry = tk.Entry(control_graph,width=12, textvariable=DomainMin, font=("Arial",12))
     domain_min_entry.grid(row=1, column=1, padx=6, pady=5)
-    domain_min_entry.bind("<Return>", GetEquation)
+    domain_min_entry.bind("<Return>", SetDoRan)
 
     DomainMax_label = tk.Label(control_graph, text="x max value:  ", font=10, bg="whitesmoke")
     DomainMax_label.grid(row=0, column=2, padx=10)
     domain_max_entry = tk.Entry(control_graph,width=12, textvariable=DomainMax, font=("Arial",12))
     domain_max_entry.grid(row=1, column=2, padx=6, pady=5)
-    domain_max_entry.bind("<Return>", GetEquation)
+    domain_max_entry.bind("<Return>", SetDoRan)
 
     RangeMin_label = tk.Label(control_graph, text="y min value:    ", font=10, bg="whitesmoke" )
     RangeMin_label.grid(row=2, column=1, padx=10)
     range_min_entry = tk.Entry(control_graph,width=12, textvariable=RangeMin, font=("Arial",12))
     range_min_entry.grid(row=3, column=1, padx=6, pady=5)
-    range_min_entry.bind("<Return>", GetEquation)
+    range_min_entry.bind("<Return>", SetDoRan)
 
     RangeMax_label = tk.Label(control_graph, text="y max value:  ", font=10, bg="whitesmoke")
     RangeMax_label.grid(row=2, column=2, padx=10)
     range_max_entry = tk.Entry(control_graph,width=12, textvariable=RangeMax, font=("Arial",12))
     range_max_entry.grid(row=3, column=2, padx=6, pady=5)
-    range_max_entry.bind("<Return>", GetEquation)
+    range_max_entry.bind("<Return>", SetDoRan)
 
     xLabel_label = tk.Label(control_graph, text="x axis label:  ", font=10, bg="whitesmoke")
     xLabel_label.grid(row=4, column=1, padx=10)
     xLabel_entry = tk.Entry(control_graph, width=12, textvariable=LabelX, font=("Arial",12))
     xLabel_entry.grid(row=5, column=1, padx=6, pady=5)
-    xLabel_entry.bind("<Return>", GetEquation)
+    xLabel_entry.bind("<Return>", SetDoRan)
     
     yLabel_label = tk.Label(control_graph, text="y axis label:  ", font=10, bg="whitesmoke")
     yLabel_label.grid(row=4, column=2, padx=10)
     yLabel_entry = tk.Entry(control_graph, width=12, textvariable=LabelY, font=("Arial",12))
     yLabel_entry.grid(row=5, column=2, padx=6, pady=5)
-    yLabel_entry.bind("<Return>", GetEquation)
+    yLabel_entry.bind("<Return>", SetDoRan)
 
-    Enter = tk.Button(control_graph, text="-- Enter --", command=GetEquation, font=("Arial",12, "bold"))
+    Enter = tk.Button(control_graph, text="-- Enter --", command=SetDoRan, font=("Arial",12, "bold"))
     Enter.grid(row=6, column=1, columnspan=2, pady=5)
 
 def OnDrag(event):
     global originalx, originaly
+    #save original location x and y
     originalx = event.x
     originaly = event.y
 def drag_graph(event):
     global originalx, originaly
     global dragx, dragy
-    dragx = canvas.get_tk_widget().winfo_x() - originalx + event.x 
+    #calculate the changes (drag)
+    dragx = canvas.get_tk_widget().winfo_x() - originalx + event.x
     dragy = canvas.get_tk_widget().winfo_y() - originaly + event.y 
-    InitialGraph()
     GetEquation()
 
 def UpdateDrag(event):
-    DomainMin.set(float(DomainMin.get())-dragx)
-    DomainMax.set(float(DomainMax.get())-dragx)
-    RangeMin.set(float(RangeMin.get())+dragy)
-    RangeMax.set(float(RangeMax.get())+dragy)
+    global DoMin, DoMax, RaMin, RaMax, dragx, dragy
+    DomainMin.set(DoMin-dragx)
+    DomainMax.set(DoMax-dragx)
+    RangeMin.set(RaMin+dragy)
+    RangeMax.set(RaMax+dragy)
+    #update the values
+    DoMin = DoMin-dragx
+    DoMax = DoMax-dragx
+    RaMin = RaMin+dragy
+    RaMax = RaMax+dragy
+    #reset drag
+    dragx = 0
+    dragy = 0
 
     
 #--------
 #CHANGE PAGE ----
 page = "EQUATION"
 def ShowTable(*args):
-    global page
+    global page, bestFit_menu
     TGraph_button.config(text="TABLE")
     TGraph_menu.entryconfig(0, label="Equation", command=ShowEquation)
     scroll_table.grid(row=1, column=1, rowspan=6, columnspan=8, pady=4, stick="n")
@@ -828,6 +882,11 @@ def ShowTable(*args):
     scroll_canvas.grid_forget()
     v_field.grid_forget()
     page = "TABLE"
+    Intercept_button.config(text="BEST FIT LINE")
+    Intercept_button.config(menu=bestFit_menu)
+    Intercept_button.unbind("<Button-1>")    
+    
+    
 
 def ShowEquation(*args):
     global page
@@ -839,15 +898,19 @@ def ShowEquation(*args):
     v_table.grid_forget()
     h_table.grid_forget()
     page = "EQUATION"
+    Intercept_button.config(text="INTERCEPTION")
+    Intercept_button.config(menu=None)
+    Intercept_button.bind("<Button-1>", lambda event: PlotIntercept())
+
+    
+    
 #---------
 #Process coordinate ----
-Xcoordinate = []
-Y1coordinate = []
-Y2coordinate = []
 def PlotCoordinate(Xlist, Ylist, colour):
     x = 0
     y = 0
     InitialGraph()
+    #print(Xlist)
     for i in range(0,len(Xlist)):
         try:
             x = float(Xlist[i])
@@ -855,10 +918,12 @@ def PlotCoordinate(Xlist, Ylist, colour):
             ax.plot(x, y, '.', color=colour)
         except:
             if Xlist[i] == "" or Ylist[i] == "":
-                ErrorMsg("Table: empty")
+                ErrorMsg("")#Table: empty")
             else:
                 ErrorMsg("Table: Invalid expression")
         canvas.draw()
+
+
        
         
 #Keyboard Location ------
@@ -1036,13 +1101,91 @@ def NewCoordinate(*args):
         ColourFrameY1.lift()
         ColourFrameY2.lift()
 
+line1 = None
+line2 = None
+
+def PlotFit(column):
+    global line1, line2, fitLine
+    print("plotted")
+    X1list = coordOOP.get_x().copy()
+    X2list = coordOOP.get_x().copy()
+    Y1list = coordOOP.get_y1().copy()
+    Y2list = coordOOP.get_y2().copy()
+
+    if column=="Y1": #if plotting for y1
+        while True:
+            try:
+                Index = Y1list.index('') #find the index of the empty item
+                Y1list.pop(Index) #remove them from the list
+                X1list.pop(Index)
+                print(Index)
+                print(X1list)
+            except ValueError: #no more empty
+                break
+        X1list = np.array(X1list, dtype=float) #convert into numpy version
+        Y1list = np.array(Y1list, dtype=float)
+        X = X1list 
+        Y = Y1list
+    elif column=="Y2": #separate into different part 
+        while True:
+            try:
+                Index = Y2list.index('')
+                Y2list.pop(Index)
+                X2list.pop(Index)
+            except:
+                  break
+        X2list = np.array(X2list, dtype=float)
+        Y2list = np.array(Y2list, dtype=float)
+        X = X2list
+        Y = Y2list
+
+    if fitLine.get() == "LINEAR":
+        m, c = np.polyfit(X, Y, 1)
+        print(m,c)
+        x = np.linspace(-10, 20, 300)
+        T = m*x + c
+    elif fitLine.get() == "QUADRATIC":
+        a, b, c = np.polyfit(X, Y, 2)
+        print(a, b, c)
+        x = np.linspace(-10,20,300)
+        T = a*x**2 + b*x + c
+    elif fitLine.get() == "CUBIC":
+        a, b, c, d = np.polyfit(X, Y, 3)
+        print(a, b, c, d)
+        x = np.linspace(-10,20,300)
+        T = a*x**3 + b*x**2 + c*x + d
+    elif fitLine.get() == "EXPONENTIAL":
+        Index = np.where(Y == 0)
+        Y = np.delete(Y, Index)
+        X = np.delete(X, Index)
+        
+        logY = np.log(Y)
+        b, logA = np.polyfit(X, logY, 1)
+        a = np.exp(logA)
+        print(a, b)
+        x = np.linspace(-10,20,300)
+        T = a*np.exp(b*x)
+        
+
+    if line1 and column == "Y1": #remove the previous one before the new one
+        line1.remove()
+    if line2 and column == "Y2":
+        line2.remove()
+
+    if column=="Y1":
+        line1, = ax.plot(x, T, '-', label="y1")
+    elif column=="Y2":
+        line2, = ax.plot(x, T, '-', label="y2")
+    ax.legend()
+    canvas.draw()
+    
 
 def GetCoordinate(*args):
     I = len(num_xvalues)
-    global Xcoordinate, Y1coordinate, Y2coordinate, y1_rgb, y2_rgb
-    Xcoordinate = []
-    Y1coordinate = []
-    Y2coordinate = []
+    global y1_rgb, y2_rgb
+    Xlist = []
+    Y1list = []
+    Y2list = []
     for i in range(0,I-1):
         xValues = num_xvalues[i].get("1.0", tk.END).strip()
         if "π" in xValues:
@@ -1058,15 +1201,18 @@ def GetCoordinate(*args):
             y1Values = simplify(y1Values)
         except: 
             pass
-        Xcoordinate.append(xValues)
-        Y1coordinate.append(y1Values)
+        Xlist.append(xValues)
+        Y1list.append(y1Values)
         try:
             xValues = simplify(xValues)
             y2Values = simplify(y2Values)
         except:
             pass
-        Y2coordinate.append(y2Values)
-
+        Y2list.append(y2Values)
+    coordOOP.set_x(Xlist)
+    coordOOP.set_y1(Y1list)
+    coordOOP.set_y2(Y2list)
+    #print(Y2list)
         
     try:
         if len(EntryField_list) >= 2:
@@ -1075,8 +1221,10 @@ def GetCoordinate(*args):
             ax.clear()
             canvas.draw()
             InitialGraph()
-            PlotCoordinate(Xcoordinate,Y1coordinate, y1_rgb.get())
-            PlotCoordinate(Xcoordinate,Y2coordinate, y2_rgb.get())
+            PlotCoordinate(coordOOP.get_x(), coordOOP.get_y1(), y1_rgb.get())
+            PlotCoordinate(coordOOP.get_x(), coordOOP.get_y2(), y2_rgb.get()) 
+            #print(Xcoordinate,Y1coodinate)
+            
     except:
         ErrorMsg("Invalid Value Entered")
 
@@ -1175,9 +1323,9 @@ def clear(*args):
     num_xvalues = []
     num_y1values = []
     num_y2values = []
-    Xcoordinate = []
-    Y1coordinate = []
-    Y2coordinate = []
+    coordOOP.set_x([])
+    coordOOP.set_y1([])
+    coordOOP.set_y2([])
     Point = []
     Colour_block = ['']
     ColorSetting = ['']
@@ -1212,11 +1360,18 @@ def StoreCSV(*args):
         if Equation_list[i] != "":
             Store_list.append(Equation_list[i])
     #print(Store_list)
+    Xlist = []
+    Y1list = []
+    Y2list = []
 
-    for i in range(0,len(num_xvalues)-1):
-        Xcoordinate[i] = num_xvalues[i].get("1.0", tk.END).strip()
-        Y1coordinate[i] = num_y1values[i].get("1.0", tk.END).strip()
-        Y2coordinate[i] = num_y2values[i].get("1.0", tk.END).strip()
+    #for i in range(0,len(num_xvalues)-1):
+    #    Xlist[i] = num_xvalues[i].get("1.0", tk.END).strip()
+    #    Y1list[i] = num_y1values[i].get("1.0", tk.END).strip()
+    #    Y2list[i] = num_y2values[i].get("1.0", tk.END).strip()
+
+    Xlist = coordOOP.get_x()
+    Y1list = coordOOP.get_y1()
+    Y2list = coordOOP.get_y2()
         
     # Open the save file dialog to choose the file location and name
     file_path = filedialog.asksaveasfilename(defaultextension=".csv", filetypes=[("CSV files", "*.csv")])
@@ -1231,13 +1386,13 @@ def StoreCSV(*args):
                 #print(content)
             writer.writerow(["TableX:"])
 
-            for content in Xcoordinate:
+            for content in Xlist:
                 writer.writerow([content])
             writer.writerow(["TableY1:"])
-            for content in Y1coordinate:
+            for content in Y1list:
                 writer.writerow([content])
             writer.writerow(["TableY2:"])
-            for content in Y2coordinate:
+            for content in Y2list :
                 writer.writerow([content])
                 
         
@@ -1395,6 +1550,8 @@ option_menu.add_command(label="Export Graph", command=lambda: ExportGraph())
 option_menu.add_command(label="Save Formula", command=lambda: StoreCSV())
 option_button.config(menu=option_menu)
 
+
+
 TGraph_button = tk.Menubutton(top_bar, text="EQUATION", width=10, font=("Arial",12, "bold"), bg="dimgrey", fg="white", relief="raised")
 TGraph_button.grid(row=0, rowspan=2, column=1, padx=5, pady=5)
 TGraph_menu = Menu(TGraph_button, tearoff=0, bg="#e6e6e6", font=12)
@@ -1417,8 +1574,21 @@ Setting_button.grid(row=0, rowspan=2, column=3, padx=3, pady=5)
 Symbol_button = tk.Button(top_bar, text="SYMBOL MENU", command=ActivateMenu, width=12, font=("Arial", 12, "bold"), bg="dimgrey", fg="white")
 Symbol_button.grid(row=0, rowspan=2, column=4, padx=3, pady=5)
 
-Intercept_button = tk.Button(top_bar, text="INTERCEPTION", command=PlotIntercept, width=12, font=("Arial", 12, "bold"), bg="dimgrey", fg="white")
+Intercept_button = tk.Menubutton(top_bar, text="INTERCEPTION", width=13, font=("Arial", 12, "bold"), bg="dimgrey", fg="white", relief="raised")
 Intercept_button.grid(row=0, rowspan=2, column=5, padx=3, pady=5)
+Intercept_button.bind("<Button-1>", lambda event: PlotIntercept())
+
+fitLine = tk.StringVar()
+fitLine.set("LINEAR")
+bestFit_menu = Menu(Intercept_button, tearoff=0, font=10)
+bestFit_menu.add_command(label="Y1", command= lambda: PlotFit("Y1"))
+bestFit_menu.add_command(label="Y2", command= lambda: PlotFit("Y2"))
+bestFit_menu.add_separator()
+bestFit_menu.add_radiobutton(label="Linear", variable=fitLine, value="LINEAR")
+bestFit_menu.add_radiobutton(label="Quadratic", variable=fitLine, value="QUADRATIC")
+bestFit_menu.add_radiobutton(label="Cubic", variable=fitLine, value="CUBIC")
+bestFit_menu.add_radiobutton(label="Exponential", variable=fitLine, value="EXPONENTIAL")
+
 
 
 #Add To Calculation------
@@ -1650,3 +1820,4 @@ Line_list = ['1']
 InitialField()
 InitialGraph()
 root.mainloop()
+
