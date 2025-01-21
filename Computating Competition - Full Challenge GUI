@@ -1,0 +1,696 @@
+import math
+from matplotlib import pyplot as plt
+import numpy as np
+import tkinter as tk
+from tkinter import *
+from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg, NavigationToolbar2Tk #* canvas and toolbar
+import time 
+from matplotlib.animation import FuncAnimation
+
+root = tk.Tk()
+root.title("GUI -(JK)") 
+root.geometry("750x550") 
+
+fig,ax = plt.subplots()
+frame = tk.Frame(root)
+canvas = FigureCanvasTkAgg(fig, master = frame)
+canvas.get_tk_widget().grid()
+frame.grid(row=1,rowspan=15, column=1, columnspan=1, padx=15, pady=5)
+plt.grid()
+canvas.draw() 
+#toolbar=NavigationToolbar2Tk(canvas, frame, pack_toolbar=False)
+#toolbar.update()
+#toolbar.grid(row=11, column=0, pady=2)
+
+
+ax.spines['left'].set_position('zero')
+ax.spines['bottom'].set_position('zero')
+ax.spines['right'].set_color('none')
+ax.spines['top'].set_color('none')    
+
+plt.xlabel(" x horizontal distance/m ")
+plt.ylabel(" y vertical distance/m ")
+
+
+a = -9.81
+dt = 0.01
+
+
+def ch1(): #-------------------
+    ax.clear()
+    option.grid_forget()
+    u = 20 #float(input("Launch speed: "))
+    angle = math.radians(30)#float(input("Launch angle: ")))
+    Height = 5#float(input("Launch height: ")) 
+    hDistance = 0
+    s = 0
+    vDistance = Height
+
+    vVelocity = round((u*math.sin(angle)),5)
+    hVelocity = round((u*math.cos(angle)),5)
+
+    x = []
+    y = []
+
+    t=0
+
+    while vDistance > 0:
+        hDistance = hVelocity*t
+        x.append(hDistance)
+
+        s = vVelocity*t + 0.5*a*t**2
+        vDistance = Height + s
+        y.append(vDistance)
+
+        t = t + dt
+
+    ax.plot(x,y, markersize='5', label="no air resistance")
+    ax.legend()
+    plt.xlabel(" x horizontal distance/m ")
+    plt.ylabel(" y vertical distance/m ")
+    plt.title("Projectile model motion challenge 1")
+    canvas.draw()
+
+
+def ch2(): #------------------
+    ax.clear()
+    option.grid_forget()
+    t = 0
+    u = 10
+    angle = math.radians(42)
+    iHeight = 1
+    hDistance = 0
+    s = 0
+    vDistance = iHeight
+    step = 0
+
+    #seperates horizontal and vertical components of initial velocity 
+    vVelocity = round((u*math.sin(angle)),5)
+    hVelocity = round((u*math.cos(angle)),5)
+
+    x = []
+    y = []
+    dx = []
+    dy = []
+
+    while vDistance > 0:
+        hDistance = hVelocity * t
+        x.append(hDistance)
+
+        s = vVelocity*t + 0.5*a*t**2
+        vDistance = iHeight + s
+        y.append(vDistance)
+    
+        if round(t,1) == step:
+            dx.append(hDistance)
+            dy.append(vDistance)
+            step = round(step + 0.1,1)
+
+        t = t + dt
+
+    vMaxHeight = -1*(vVelocity**2)/(2*a)
+    MaxTime = round(math.sqrt((-2*vMaxHeight)/a),5)
+    hMaxDistance = MaxTime * hVelocity
+    vMaxHeight = vMaxHeight + iHeight
+
+    ax.plot(x,y,markersize="5")
+    ax.plot(dx,dy,'.', c='cornflowerblue', label='y vs x')
+    ax.plot(hMaxDistance,vMaxHeight, '*', c='orange', label='apogee')
+    ax.legend()
+    plt.xlabel(" x horizontal distance/m ")
+    plt.ylabel(" y vertical distance/m ")
+    plt.title("Projectile model motion challenge 2")
+    canvas.draw()
+
+
+def ch3(): #---------------
+    ax.clear()
+    option.grid_forget()
+    t = 0
+    s = 0
+    X = 1000
+    Y = 300
+    u = 150
+
+    #high ball ------
+    high_x = np.linspace(0,1000,200)
+    high_y = (high_x*(math.tan(1.3254))) - (9.81*(1+(math.tan(1.3254))**2)*(high_x**2))/(2*(u**2))
+
+    #low ball ------
+    low_x = np.linspace(0,1000,100)
+    low_y = (low_x*(math.tan(0.5368))) - (9.81*(1+(math.tan(0.5368))**2)*(low_x**2))/(2*(u**2))
+
+    #minimum speed -------
+    min1 = (Y + math.sqrt(X**2 + Y**2))/X
+    min_angleR = math.atan(min1)
+    min_angleD = math.degrees(min_angleR)
+    minU = (math.sqrt(9.81))* (math.sqrt(Y+ (math.sqrt(X**2 + Y**2))))
+    VminU = round((minU*math.sin(min_angleR)),5)
+    HminU = round((minU*math.cos(min_angleR)),5)
+
+    minX = []
+    minY = []
+
+    Height = 0
+    vDistance = Height
+    hDistance = 0
+
+    while hDistance <= 1000:
+        hDistance = HminU*t
+        minX.append(hDistance)
+
+        s = VminU*t + 0.5*a*t**2
+        vDistance = Height + s
+        minY.append(vDistance)
+
+        t = t + dt
+    #----------------------
+    ax.plot(X,Y,'*', label='target')
+    ax.plot(high_x, high_y, label='high ball')
+    ax.plot(low_x, low_y, label='low ball')
+    ax.plot(minX, minY, label='Min u')
+    ax.legend()
+    plt.xlabel(" x horizontal distance/m ")
+    plt.ylabel(" y vertical distance/m ")
+    plt.title("Projectile model motion challenge 3")
+    canvas.draw()
+
+def ch4(): #---------------
+    ax.clear()
+    option.grid_forget()
+    a = -9.81
+    dt = 0.01
+    At = 0
+    u = 10
+    angle_d = 60
+    angle_r = math.radians(angle_d)
+    iHeight = 2
+    hDistance = 0
+    s = 0
+    vDistance = iHeight
+
+    #seperates horizontal and vertical components of initial velocity 
+    vVelocity = round((u*math.sin(angle_r)),5)
+    hVelocity = round((u*math.cos(angle_r)),5)
+
+    x = []
+    y = []
+
+    while vDistance > 0:
+        hDistance = hVelocity*At
+        x.append(hDistance)
+
+        s = vVelocity*At + 0.5*a*At**2
+        vDistance = iHeight + s
+        y.append(vDistance)
+
+        At = At + dt
+    At = At-dt
+    ax.plot(x,y, label=f"θ ={angle_d}°  T ={round(At,2)}s  HorizontalDistance ={round(hDistance,2)}m")
+
+    MaxAngle_r = math.asin(1/math.sqrt(2+2*(-1*a)*iHeight/u**2))
+    MaxAngle_d = math.degrees(MaxAngle_r)
+    hDistance = 0
+    vDistance = iHeight
+
+    vVelocity = round((u*math.sin(MaxAngle_r)),5)
+    hVelocity = round((u*math.cos(MaxAngle_r)),5)
+
+    Max_X = []
+    Max_Y = []
+    Bt = 0
+
+    while vDistance > 0:
+        hDistance = hVelocity*Bt
+        Max_X.append(hDistance)
+
+        s = vVelocity*Bt + 0.5*a*Bt**2
+        vDistance = iHeight + s
+        Max_Y.append(vDistance)
+
+        Bt = Bt + dt
+
+    Bt = Bt-dt
+    ax.plot(Max_X, Max_Y, label=f"θmax ={round(MaxAngle_d,1)}°  T ={round(Bt,2)}s  HorizontalDistance ={round(hDistance,2)}m")
+    ax.legend()
+    plt.xlabel(" x horizontal distance/m ")
+    plt.ylabel(" y vertical distance/m ")
+    plt.title("Projectile model motion challenge 4")
+    canvas.draw()
+
+def ch5(): #------------------
+    ax.clear()
+    option.grid_forget()
+    t = 0
+    s = 0
+    X = 1000 
+    Y = 300 
+    u = 150 
+
+    #Max Range -------
+    iHeight = 0
+    MaxAngle_r = math.asin(1/math.sqrt(2+2*(-1*a)*iHeight/u**2))
+    MaxAngle_d = math.degrees(MaxAngle_r)
+    hDistance = 0
+    vDistance = iHeight
+
+
+    vVelocity = round((u*math.sin(MaxAngle_r)),5)
+    hVelocity = round((u*math.cos(MaxAngle_r)),5)
+
+    Max_X = []
+    Max_Y = []
+    t = 0
+    count = 0
+
+    while hDistance < 2300:
+        hDistance = hVelocity*t
+        s = vVelocity*t + 0.5*a*t**2
+        vDistance = iHeight + s
+
+        if (round(count,0))%15 == 0:
+            Max_X.append(hDistance)
+            Max_Y.append(vDistance)
+
+        count += 1
+        t = t + dt
+    t = t-dt
+    ax.plot(Max_X, Max_Y, label="Max range")
+
+    #Bounding parabola ------
+    boun_x = np.linspace(0,2289,100)
+    boun_y = ((u**2)/(2*9.81))-((9.81*(boun_x**2))/(2*(u**2)))
+    ax.plot(boun_x, boun_y, label='Bounding Parabola')
+
+    #high ball ------
+    high_x = np.linspace(0,1078,210)
+    high_y = (high_x*(math.tan(1.3254))) - (9.81*(1+(math.tan(1.3254))**2)*(high_x**2))/(2*(u**2))
+    ax.plot(high_x, high_y, label='high ball')
+
+    #low ball ------
+    low_x = np.linspace(0,2010,100)
+    low_y = (low_x*(math.tan(0.5368))) - (9.81*(1+(math.tan(0.5368))**2)*(low_x**2))/(2*(u**2))
+    ax.plot(low_x, low_y, label='low ball')
+
+    #minimum speed -------
+    min1 = (Y + math.sqrt(X**2 + Y**2))/X
+    min_angleR = math.atan(min1)
+    min_angleD = math.degrees(min_angleR)
+
+    minU = (math.sqrt(9.81))* (math.sqrt(Y+ (math.sqrt(X**2 + Y**2))))
+    VminU = round((minU*math.sin(min_angleR)),5)
+    HminU = round((minU*math.cos(min_angleR)),5)
+    minX = []
+    minY = []
+    
+    Height = 0
+    vDistance = Height
+    hDistance = 0
+    t=0
+
+    while vDistance >= 0:
+        hDistance = HminU*t
+        minX.append(hDistance)
+        s = VminU*t + 0.5*a*t**2
+        vDistance = Height + s
+        minY.append(vDistance)
+
+        t = t + dt
+
+    ax.plot(minX, minY, markersize='10', label='Min u')
+    #----------------------
+    ax.plot(X,Y,'*', label="target")
+    ax.plot(0,0,'*', label="Launch(0,0)")
+    ax.legend()
+    plt.xlabel(" x horizontal distance/m ")
+    plt.ylabel(" y vertical distance/m ")
+    plt.title("Projectile model motion challenge 5")
+    canvas.draw()
+
+def ch6(): #------------------
+    ax.clear()
+    option.grid_forget()
+    At = 0
+    u = 10
+    angle_d = 60
+    angle_r = math.radians(angle_d)  # Launch angle from horizontal in radians
+    iHeight = 2
+    hDistance = 0
+    s = 0
+    vDistance = iHeight
+    #seperates horizontal and vertical components of initial velocity 
+    vVelocity = round((u*math.sin(angle_r)),5)
+    hVelocity = round((u*math.cos(angle_r)),5)
+    x = []
+    y = []
+    x1 = 0
+    x2 = 0
+    y1 = iHeight
+    y2 = iHeight
+    temp = 0
+    Distance = 0
+
+    while vDistance > 0:
+        hDistance = hVelocity*At
+        x.append(hDistance)
+        s = vVelocity*At + 0.5*a*At**2
+        vDistance = iHeight + s
+        y.append(vDistance)
+
+        x2 = x1
+        x1 = hDistance
+        y2 = y1
+        y1 = vDistance
+
+        temp = math.sqrt((x1-x2)**2 + (y1-y2)**2)
+        Distance = Distance + temp
+        At = At + dt
+        
+    Distance = Distance - temp
+    At = At-dt
+
+    ax.plot(x,y,label=f"θ ={angle_d}°  T ={round(At,2)}s  DistanceTravelled ={round(Distance,2)}m")
+
+    Distance = 0
+    MaxAngle_r = math.asin(1/math.sqrt(2+2*(-1*a)*iHeight/u**2))
+    MaxAngle_d = math.degrees(MaxAngle_r)
+    hDistance = 0
+    vDistance = iHeight
+
+    vVelocity = round((u*math.sin(MaxAngle_r)),5)
+    hVelocity = round((u*math.cos(MaxAngle_r)),5)
+
+    Max_X = []
+    Max_Y = []
+    Bt = 0
+    x1 = 0
+    x2 = 0
+    y1 = iHeight
+    y2 = iHeight
+    temp = 0
+    while vDistance > 0:
+        hDistance = hVelocity*Bt
+        Max_X.append(hDistance)
+        s = vVelocity*Bt + 0.5*a*Bt**2
+        vDistance = iHeight + s
+        Max_Y.append(vDistance)
+
+        x2 = x1
+        x1 = hDistance
+        y2 = y1
+        y1 = vDistance
+
+        temp = math.sqrt((x1-x2)**2 + (y1-y2)**2)
+        Distance = Distance + temp
+        Bt = Bt + dt
+    Distance = Distance - temp
+    Bt = Bt-dt
+    ax.plot(Max_X, Max_Y, label=f"θmax ={round(MaxAngle_d,1)}°  T ={round(Bt,2)}s  DistanceTravelled ={round(Distance,2)}m")
+    ax.legend()
+    plt.xlabel(" x horizontal distance/m ")
+    plt.ylabel(" y vertical distance/m ")
+    plt.title("Projectile model motion challenge 6")
+    canvas.draw()
+
+
+def ch7():
+    ax.clear()
+    option.grid(row=1, column=2)
+    angleD = [30,45,60,70.5,78,85]
+    a = -9.81
+    dt = 0.01
+    closest_r = 0
+    closest_t = 0
+    furthest_r = 0
+    furthest_t = 0
+    closest_x = 0
+    closest_y = 0
+    furthest_x = 0
+    furthest_y = 0
+    global T,RL,TD
+    global G2X,G2Y
+    global CT,CR,FT,FR
+    global CX,CY,FX,FY
+    G2X = []
+    G2Y = []
+    CX = []
+    CY = []
+    FX = []
+    FY = []
+    T = []
+    RL = []
+    TD = []
+    CT = []
+    CR = []
+    FT = []
+    FR = []
+    for item in angleD:
+        t = 0
+        v = 10
+        iH = 0
+        thetaD = item
+        thetaR = (2*(math.pi))*(thetaD/360)
+        Vv = round((v*math.sin(thetaR)),10)
+        Hv = round((v*math.cos(thetaR)),10)
+        s = 0
+        x = []
+        y = []
+        r = []
+        time = []
+
+        X = 0
+        Y = iH
+        R = 0
+        r3 = 0
+        r2 = 0
+        r1 = 0
+    
+        while t <= 2.5:
+            X = Hv*t
+            s = Vv*dt + 0.5*a*dt**2
+            Y = Y+s
+            Vv = a*dt + Vv
+            
+            if Y >= -5:
+                x.append(X)
+                y.append(Y)
+            time.append(t)
+            t = t + dt
+
+            R = math.sqrt(X**2 + (Y-iH)**2)
+            r.append(R)
+
+            r3 = r2
+            r2 = r1
+            r1 = R
+            if r2>r3 and r2>r1:
+                furthest_r = r2
+                furthest_t = t-dt
+                furthest_x = X
+                furthest_y = Y
+            elif r2<r3 and r2<r1:
+                closest_r = r2
+                closest_t = t-dt
+                closest_x = X
+                closest_y = Y
+        ax.plot(time,r,markersize=15, label=f"θ ={thetaD}°")
+        TD.append(thetaD)
+        T.append(time)
+        RL.append(r)
+        plt.legend()
+        if closest_r != 0:
+            ax.plot(closest_t, closest_r, '*')
+            CT.append(closest_t)
+            CR.append(closest_r)
+            CX.append(closest_x)
+            CY.append(closest_y)
+        if furthest_r != 0:
+            ax.plot(furthest_t, furthest_r, '*')
+            FT.append(furthest_t)
+            FR.append(furthest_r)
+            FX.append(furthest_x)
+            FY.append(furthest_y)
+
+        G2X.append(x)
+        G2Y.append(y)
+    plt.xlabel("time / s")
+    plt.ylabel("range r / m")
+    plt.title("Projectile model motion challenge 7")
+    canvas.draw()
+
+def ch7a():
+    ax.clear()
+    for i in range(0, len(T)):
+        ax.plot(T[i], RL[i], markersize=15, label=f"θ ={TD[i]}°")
+    for i in range(0, len(CT)):
+        ax.plot(CT[i], CR[i], '*')
+    for i in range(0, len(FT)):
+        ax.plot(FT[i], FR[i], '*')
+    ax.legend()
+    plt.xlabel("time / s")
+    plt.ylabel("range r / m")
+    plt.title("Projectile model motion challenge 7")
+    canvas.draw()
+
+def ch7b():
+    ax.clear()
+    for i in range(0,len(G2X)):
+        ax.plot(G2X[i], G2Y[i], markersize=15, label=f"θ ={TD[i]}°")
+    for i in range(0, len(CX)):
+        ax.plot(CX[i], CY[i], '*')
+    for i in range(0,len(FX)):
+        ax.plot(FX[i],FY[i], '*')
+    ax.legend()
+    plt.xlabel("x/m")
+    plt.ylabel("y/m")
+    plt.title("Projectile model motion challenge 7")
+    canvas.draw()
+
+def ch8():
+    ax.clear()
+    option.grid_forget()
+    c = 0.7
+    v = 5
+    t = 0
+    thetaD = 45
+    thetaR = (2*(math.pi))*(thetaD/360)
+    bounce = 0
+    Vv = round((v*math.sin(thetaR)),10)
+    Hv = round((v*math.cos(thetaR)),10)
+    Y = 10
+    s = 0
+    i = True
+    X = 0
+    x = []
+    y = []
+    while i==True:
+        X = Hv*t
+        s = Vv*dt + 0.5*a*dt**2
+        Y = Y + s
+        Vv = a*dt+Vv
+        t = t+dt
+        if Y <= 0:
+            Vv = Vv*c*-1
+            Y = 0
+            if Vv<=1:
+                i = False
+            else:
+                bounce += 1
+        x.append(X)
+        y.append(Y)
+    plt.plot(x, y,markersize=15)
+    plt.xlabel(" x horizontal distance/m ")
+    plt.ylabel(" y vertical distance/m ")
+    plt.title("Projectile model motion challenge 8")
+    canvas.draw()
+
+def ch9():
+    ax.clear()
+    option.grid_forget()
+    g = 9.81
+    cDrag = 0.1
+    aDensity = 1
+    oMass = 0.1
+    oCSArea = 0.007854
+    arFactor_k = float((0.5*cDrag*aDensity*oCSArea)/oMass)
+    thetaD = 30
+    thetaR = 2*(math.pi)*(thetaD/360)
+    iv = 20
+    dt = 0.01
+    t = 0
+    iHv = iv*math.cos(thetaR)
+    iVv = iv*math.sin(thetaR)
+    iHeight = 2
+    vHeight = iHeight
+    hDistance = 0
+
+    v = iv
+    Hv = iHv
+    Vv = iVv
+    NHv = iHv
+    NVv = iVv
+    s = 0
+    Ny = iHeight
+    Nx = 0
+    ARx = []
+    ARy = []
+    NX = []
+    NY = []
+    X = 0
+    Y = 0
+    n = 1
+
+    Ha = (-1*Hv/v)*arFactor_k*(v**2)
+    Va = -g-((Vv/v)*arFactor_k*(v**2))
+
+    while vHeight > 0:
+        X = Hv*dt + 0.5*Ha*dt**2
+        hDistance = hDistance + X
+        Y = Vv*dt + 0.5*Va*dt**2
+        vHeight = vHeight + Y
+        Hv = Hv + Ha*dt
+        Vv = Vv + Va*dt
+        v = math.sqrt((Hv**2) + (Vv**2))
+        ARx.append(hDistance)
+        ARy.append(vHeight)
+
+        t = t+dt
+        n += 1
+
+    while Ny > 0:
+        Nx = Nx + NHv*dt
+        Ny = Ny + NVv*dt + 0.5*a*dt**2
+        NVv = a*dt + NVv
+        NX.append(Nx)
+        NY.append(Ny)
+        
+    ax.plot(NX, NY, '.', markersize=3, c='royalblue', label='Without resistance')
+    ax.plot(ARx, ARy,'.', markersize=2, c='firebrick', label='Air resistance')
+    ax.legend()
+    plt.xlabel(" horizontal distance/m ")
+    plt.ylabel(" vertical distance/m ")
+    plt.title("Projectile model motion challenge 9")
+    canvas.draw()
+
+
+        
+def clear():
+    ax.clear()
+    ax.spines['left'].set_position('zero')
+    ax.spines['bottom'].set_position('zero')
+    ax.spines['right'].set_color('none')
+    ax.spines['top'].set_color('none')    
+    plt.xlabel(" x horizontal distance/m ")
+    plt.ylabel(" y vertical distance/m ")
+    plt.title("Projectile model motion challenge ?")
+    plt.grid()
+    canvas.draw()
+    option.grid_forget()
+    
+menubar = tk.Menu()
+root.config(menu=menubar)
+#challenge_menu = tk.Menu(menubar, tearoff=False)
+menubar.add_command(label="Ch.1", command=lambda:ch1())
+menubar.add_command(label="Ch.2", command=lambda:ch2())
+menubar.add_command(label="Ch.3", command=lambda:ch3())
+menubar.add_command(label="Ch.4", command=lambda:ch4())
+menubar.add_command(label="Ch.5", command=lambda:ch5())
+menubar.add_command(label="Ch.6", command=lambda:ch6())
+#ch7Menu = tk.Menu(menubar, tearoff=0)
+#menubar.add_cascade(label="Ch.7", menu=ch7Menu)
+#ch7Menu.add_command(label="graph 1")
+#ch7Menu.add_command(label="graph 2")
+menubar.add_command(label="Ch.7", command=lambda:ch7())
+menubar.add_command(label="Ch.8", command=lambda:ch8())
+menubar.add_command(label="Ch.9", command=lambda:ch9())
+menubar.add_command(label="Clear Graph", command=lambda:clear())
+
+global option
+option = tk.Frame(root)
+option.grid(row=1, column=2)
+Graph1 = tk.Button(option, text="graph1", command=lambda:ch7a(), font=15)
+Graph1.grid(row=1, column=1)
+Graph2 = tk.Button(option, text="graph2", command=lambda:ch7b(), font=15)
+Graph2.grid(row=2, column=1)
+option.grid_forget()
+mainloop()
