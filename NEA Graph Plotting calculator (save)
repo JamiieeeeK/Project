@@ -1,7 +1,7 @@
 import tkinter as tk
 from tkinter import *
 from tkinter import filedialog
-import matplotlib as mpl
+#import matplotlib as mpl
 from matplotlib.figure import Figure
 from matplotlib import pyplot as plt
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg, NavigationToolbar2Tk
@@ -125,7 +125,6 @@ OpenColour = [False]
 def colourcode(i):
     Colour_block[i].config(bg=f"{COLOUR[i].get()}")
     Colour_list[i] = COLOUR[i].get().strip()
-    #print(Colour_list[i])
     GetEquation()
 
 def SetColour(i):
@@ -240,13 +239,13 @@ def InitialGraph():
     plt.grid()
 
     #set up the default values
-    if unit.get() == 'Radian': #for radian
+    if unit.get() == 'RADIAN': #for radian
         xmin = -2*np.pi
         xmax = 4*np.pi
         ax.xaxis.set_major_locator(MultipleLocator(base=np.pi))
         ax.xaxis.set_major_formatter(FuncFormatter(format_func))
         ax.tick_params(axis='x', direction='inout', length=4, width=1, colors='black')
-    elif unit.get() == 'Degree': #for degree
+    elif unit.get() == 'DEGREE': #for degree
         xmin = -90
         xmax = 360
 
@@ -320,7 +319,6 @@ def ChangeDegree(*args):
 #TRIG? ----
 def is_trig(eq):
     trig_functions = [sp.sin, sp.cos, sp.tan, sp.cot, sp.sec, sp.csc, sp.asin, sp.acos, sp.atan, sp.acot, sp.asec, sp.acsc]
-    #print('check if is trig: ', eq)
     for func in trig_functions:
         try:
             if eq.has(func):
@@ -362,9 +360,9 @@ def Graph2(Equation, SolveFor, colour, style):
                     xR_vals = np.linspace(xMin,xMax,linspaceX)
                     y_vals = f_np(xR_vals)
 
-                    if unit.get() == "Radian":
+                    if unit.get() == "RADIAN":
                         x_vals = xR_vals
-                    elif unit.get() == "Degree":
+                    elif unit.get() == "DEGREE":
                         x_vals = np.degrees(xR_vals)
                 else:
                     x_vals = np.linspace(xMin,xMax,linspaceX)
@@ -389,9 +387,9 @@ def Graph2(Equation, SolveFor, colour, style):
                     yR_vals = np.linspace(yMin,yMax,linspaceY)
                     x_vals = f_np(yR_vals)
 
-                    if unit.get() == "Radian":
+                    if unit.get() == "RADIAN":
                         y_vals = yR_vals
-                    elif unit.get() == "Degree":
+                    elif unit.get() == "DEGREE":
                         y_vals = np.degrees(yR_vals)
                 else:
                     y_vals = np.linspace(yMin,yMax,linspaceY)
@@ -428,7 +426,8 @@ Xintercept = []
 Yintercept = []
 #Calculate point of interception -----
 def PtOfIntercept(expr, solve_for):
-    global Xintercept, Yintercept
+    Xintercept = []
+    Yintercept = []
     equation = str(expr)
     if "x" in equation:
         # for x = 0
@@ -440,7 +439,7 @@ def PtOfIntercept(expr, solve_for):
         domainMin = DoMin #get the domain values
         domainMax = DoMax
         #print(domainMax) #variable check
-        if unit.get() == "Degree" and is_trig(eq) == True: #convert into radian if is degree
+        if unit.get() == "DEGREE" and is_trig(eq) == True: #convert into radian if is degree
             domainMin = sp.rad(domainMin)
             domainMax = sp.rad(domainMax)
         #print(domainMin) #variable check
@@ -465,10 +464,10 @@ def PtOfIntercept(expr, solve_for):
         Xintercept.append(0)
         Yintercept.append(eq)
         
-    if unit.get() == "Degree":
+    if unit.get() == "DEGREE":
         Xintercept = ChangePi(Xintercept)
-        #print("caught")
-        
+
+    return Xintercept, Yintercept
 
 
         
@@ -494,34 +493,33 @@ def PlotIntercept():
 
 #PROCESS_GRAPH -----
 def GetEquation(*args):
-    global Xintercept, Yintercept, plotforinter
+    global plotforinter
     ax.clear()
     canvas.draw()
-    Xintercept = []
-    Yintercept = []
+
     for i in range(0,len(EntryField_list)-1):
         Equation_list[i] = EntryField_list[i].get("1.0", tk.END).strip()
         equation = ChangeSymbol(Equation_list[i])
+        equation = ChangeFunc(equation)
         try:
             result, solve_for = Equation(equation)
             colour = Colour_list[i]
             style = Style_list[i]
             Graph2(result, solve_for, colour, style)
             if plotforinter == True:
-                PtOfIntercept(result, solve_for)
+                Xintercept, Yintercept = PtOfIntercept(result, solve_for)
             error_message.grid_forget()
         except:
             ErrorMsg("Equation: Invalid expression")
     if plotforinter == True:
-        print(Xintercept)
-        print(Yintercept)
+        print("x intercept:", Xintercept)
+        print("y intercept: ", Yintercept)
         print("--------------")
         PlotCoordinate(Xintercept, Yintercept, "black")
 
     if len(num_xvalues) >= 2:
         PlotCoordinate(coordOOP.get_x(), coordOOP.get_y1(), y1_rgb.get())
         PlotCoordinate(coordOOP.get_x(), coordOOP.get_y2(), y2_rgb.get())
-        #print(Xcoordinate, Y1coordinate)
                 
     else:
         pass
@@ -530,7 +528,6 @@ def ChangeSymbol(equation):
     if "π" in equation:
         replace_pi = equation
         replace_pi = replace_pi.replace("π", "3.1415926")
-        #print(replace_pi)
         return replace_pi
     if "|" in equation:
         replace_abs = equation
@@ -539,12 +536,21 @@ def ChangeSymbol(equation):
             replace_abs = replace_abs[:first_index]+"abs("+replace_abs[first_index+1:]
             second_index = replace_abs.find("|")
             replace_abs = replace_abs[:second_index]+")"+replace_abs[second_index+1:]
-        #print(replace_abs)
         return replace_abs
     else:
         return equation
         
-            
+def ChangeFunc(equation):
+    if "f(x)" in equation:
+        equation = equation.replace("f(x)", "y")
+    elif "f(x)" in equation:
+        equation = equation.replace("g(x)", "y")
+    elif "h(x)" in equation:
+        equation = equation.replace("h(x)", "y")
+
+    print(equation)
+    return equation
+    
 
 
 
@@ -611,12 +617,11 @@ def Equation(Entry):
 def CalY(eq):
     global xpoint, ypoint
     if is_trig(eq) == True:
-        if unit.get() == "Degree":
+        if unit.get() == "DEGREE":
             xRpoint = sp.rad(xpoint)
             ypoint = eq.subs(x, xRpoint).evalf()
             ypoint = round(ypoint, 3)
-            #print(ypoint)
-        elif unit.get() == "Radian":
+        elif unit.get() == "RADIAN":
             ypoint = eq.subs(x, xpoint).evalf()
             ypoint=round(ypoint,3)
     else:
@@ -629,17 +634,16 @@ def CalY(eq):
         
     if str(ypoint)== "nan":
         return "null"
-    #print(ypoint)
     return ypoint
 
 def CalGradient(eq):
     global xpoint, ypoint, gradient
     differentiate = sp.diff(eq,x)
     if is_trig(differentiate) == True:
-        if unit.get() == "Degree":
+        if unit.get() == "DEGREE":
             xRpoint = sp.rad(xpoint)
             gradient = differentiate.subs(x,xRpoint) * (3.1415926/180)
-        elif unit.get() == "Radian":
+        elif unit.get() == "RADIAN":
             gradient = differentiate.subs(x, xpoint)
     else:
         gradient = differentiate.subs(x,xpoint)
@@ -728,7 +732,7 @@ def ChangeType(*args):
         TLine_menu.entryconfig(0, label="Normal", command=ChangeType)
         LineType = "TANGENT"
     CalLine()
-    #print(LineType)
+
     
 
     
@@ -775,13 +779,12 @@ def SetDoRan(*args):
         DoMax = float(DomainMax.get())
         RaMin = float(RangeMin.get())
         RaMax = float(RangeMax.get())
-        print(RaMin)
         GetEquation()
     except:
-        if unit.get() == 'Radian':
+        if unit.get() == 'RADIAN':
             DomainMin.set(round((-2*np.pi),1))
             DomainMax.set(round((4*np.pi),1)) 
-        elif unit.get() == 'Degree':
+        elif unit.get() == 'DEGREE':
             DomainMin.set(-90.0)
             DomainMax.set(360.0)
         RangeMin.set(-5)
@@ -899,7 +902,7 @@ def ShowEquation(*args):
     h_table.grid_forget()
     page = "EQUATION"
     Intercept_button.config(text="INTERCEPTION")
-    Intercept_button.config(menu=None)
+    Intercept_button.config(menu="")
     Intercept_button.bind("<Button-1>", lambda event: PlotIntercept())
 
     
@@ -910,7 +913,6 @@ def PlotCoordinate(Xlist, Ylist, colour):
     x = 0
     y = 0
     InitialGraph()
-    #print(Xlist)
 
     for i in range(0,len(Xlist)):
         try:
@@ -953,7 +955,6 @@ def ActY1(*args):
     y1_coordinate.insert(1.0, "   y₁")
     y1_coordinate.config(state="disable")
     #unbind
-    print("pass")
     for I in range(0, len(num_y1values)):
         num_y1values[I].unbind("<<Modified>>")
         num_y1values[I].config(bg="#FDFDFD")
@@ -969,7 +970,6 @@ def ActY2(*args):
     y2_coordinate.insert(1.0, "   y₂")
     y2_coordinate.config(state="disable")
     #unbind
-    print("pass")
     for I in range(0, len(num_y2values)):
         num_y2values[I].unbind("<<Modified>>")
         num_y2values[I].config(bd=1, bg="#FDFDFD")
@@ -1107,7 +1107,6 @@ line2 = None
 def PlotFit(column):
     global line1, line2, fitLine
     global y1_rgb, y2_rgb
-    print("plotted")
     X1list = coordOOP.get_x().copy()
     X2list = coordOOP.get_x().copy()
     Y1list = coordOOP.get_y1().copy()
@@ -1119,8 +1118,6 @@ def PlotFit(column):
                 Index = Y1list.index('') #find the index of the empty item
                 Y1list.pop(Index) #remove them from the list
                 X1list.pop(Index)
-                print(Index)
-                print(X1list)
             except ValueError: #no more empty
                 break
         X1list = np.array(X1list, dtype=float) #convert into numpy version
@@ -1227,7 +1224,7 @@ def GetCoordinate(*args):
     coordOOP.set_x(Xlist)
     coordOOP.set_y1(Y1list)
     coordOOP.set_y2(Y2list)
-    #print(Y2list)
+
         
     try:
         if len(EntryField_list) >= 2:
@@ -1238,7 +1235,7 @@ def GetCoordinate(*args):
             InitialGraph()
             PlotCoordinate(coordOOP.get_x(), coordOOP.get_y1(), y1_rgb.get())
             PlotCoordinate(coordOOP.get_x(), coordOOP.get_y2(), y2_rgb.get()) 
-            #print(Xcoordinate,Y1coodinate)
+
             
     except:
         ErrorMsg("Invalid Value Entered")
@@ -1374,19 +1371,14 @@ def StoreCSV(*args):
         Equation_list[i] = EntryField_list[i].get(1.0, tk.END).strip()
         if Equation_list[i] != "":
             Store_list.append(Equation_list[i])
-    #print(Store_list)
+
     Xlist = []
     Y1list = []
     Y2list = []
 
-    #for i in range(0,len(num_xvalues)-1):
-    #    Xlist[i] = num_xvalues[i].get("1.0", tk.END).strip()
-    #    Y1list[i] = num_y1values[i].get("1.0", tk.END).strip()
-    #    Y2list[i] = num_y2values[i].get("1.0", tk.END).strip()
-
-    Xlist = coordOOP.get_x()
-    Y1list = coordOOP.get_y1()
-    Y2list = coordOOP.get_y2()
+    Xlist = coordOOP.get_x().copy()
+    Y1list = coordOOP.get_y1().copy()
+    Y2list = coordOOP.get_y2().copy()
         
     # Open the save file dialog to choose the file location and name
     file_path = filedialog.asksaveasfilename(defaultextension=".csv", filetypes=[("CSV files", "*.csv")])
@@ -1412,6 +1404,7 @@ def StoreCSV(*args):
                 
         
         print(f"CSV file saved as: {file_path}")
+        print("----------------------------------------------------")
         
 
 
@@ -1420,6 +1413,7 @@ column = "Equation"
 def OpenCSV(*args):
     # Open a file dialog to select a CSV file
     file_path = filedialog.askopenfilename(title="Open CSV file", filetypes=[("CSV files", "*.csv")])
+    print("------------------------------------------------")
     print(f"CSV file opend from: {file_path}")
     clear() # Clear previous data in the application
     EntryField_list[0].delete("1.0", tk.END)
@@ -1478,7 +1472,7 @@ field_frame = tk.Frame(scroll_canvas)
 field_frame.grid(row=1,column=1, sticky="nwes")
 field_frame.bind("<Configure>", lambda e:scroll_canvas.configure(scrollregion=scroll_canvas.bbox("all")))
 scroll_canvas.create_window((0,0), window=field_frame,anchor="nw")
-#field_frame.bind("<Button-1>", lambda x: print('scroll'))
+
 
 v_field = tk.Scrollbar(root, orient="vertical", bg="grey")
 v_field.grid(row=1, rowspan=6,column=0, stick="nsw", pady=4)
@@ -1574,12 +1568,12 @@ TGraph_menu.add_command(label="Table", command=ShowTable)
 TGraph_button.config(menu=TGraph_menu)
 
 unit = tk.StringVar()
-unit.set("Degree")
+unit.set("DEGREE")
 unit_button = tk.Menubutton(top_bar, text="UNIT", width=5, font=("Arial",12, "bold"), bg="dimgrey", fg="white", relief="raised")
 unit_button.grid(row=0, rowspan=2, column=2, padx=3, pady=5)
 unit_menu = Menu(unit_button, tearoff=0, bg="#e6e6e6", font=12)
-unit_menu.add_radiobutton(label="Radian", variable=unit, value="Radian", command=ChangeRadian)
-unit_menu.add_radiobutton(label="Degree", variable=unit, value="Degree", command=ChangeDegree)
+unit_menu.add_radiobutton(label="Radian", variable=unit, value="RADIAN", command=ChangeRadian)
+unit_menu.add_radiobutton(label="Degree", variable=unit, value="DEGREE", command=ChangeDegree)
 unit_button.config(menu=unit_menu)
 
 
@@ -1613,9 +1607,7 @@ value = ""
 def AddValue(symbol):
     if page == "EQUATION":
         calculation = EntryField_list[location].get("1.0", tk.END).strip()
-        #print("previous: ", calculation)
         calculation += symbol
-        #print("after: ", calculation)
         EntryField_list[location].delete(1.0, "end")
         EntryField_list[location].insert(1.0, calculation)
         GetEquation()
@@ -1836,4 +1828,3 @@ Line_list = ['1']
 InitialField()
 InitialGraph()
 root.mainloop()
-
