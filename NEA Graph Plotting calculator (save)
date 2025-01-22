@@ -594,24 +594,27 @@ def Equation(Entry):
         Equal = False
         solve_for = 'y'
 
+#white box test in this procedure, test through every kind of graph that might stimulate each part
+#If problem found, fix it.
+#If some part never used, removed them -> code efficient
 
     try:
         if Equal == False:
             result = eq
             return result, solve_for  #solving for y
         else: #have equal sign
-            result = sp.solve(eq, solve_for) #try y^2 = 4, y = |x|,  
+            result = sp.solve(eq, solve_for) #try y^2 = 4, y = |x|,  y = |-1|
             if len(result) == 2:
-                return result[1], solve_for #return the positive solution
-            return result[0], solve_for 
+                return result[1], solve_for #return the positive solution, print, check
+            return result[0], solve_for #only one solution
     except NotImplementedError as e:
         # Handle equation types not supported by SymPy
         ErrorMsg("Error: SymPy does not support solving this type of equation")
     
     except Exception as e:
         ErrorMsg("Equation: Invalid expression")
-        result = eq
-        return result, solve_for
+        result = eq #if invalid, why still returning something
+        return result, solve_for #print and check
         
 
 #Calculate Values --------
