@@ -558,7 +558,8 @@ def Equation(Entry):
     Entry = Entry.replace(" ", "")
     solve_for = ''
     Equal = True
-    
+
+    #splitting the Entry into two part in the eq
     if '=' in Entry:
         lhs_str, rhs_str = Entry.split('=')
         if not is_valid_expression(lhs_str) or not is_valid_expression(rhs_str):
@@ -566,8 +567,8 @@ def Equation(Entry):
         lhs = sp.sympify(lhs_str.strip())
         rhs = sp.sympify(rhs_str.strip())
         eq = sp.Eq(lhs, rhs)
-        if "f(x)" in Entry or "g(x)" in Entry or "h(x)" in Entry :
-            eq = rhs
+        #if "f(x)" in Entry or "g(x)" in Entry or "h(x)" in Entry :
+        #    eq = rhs
            
     else:
         if not is_valid_expression(Entry):
@@ -579,15 +580,15 @@ def Equation(Entry):
             ErrorMsg("Equation: Invalid expression")
    
         
-
+    #idemtify solving for which variable
     if "=" in Entry:
-        if "y" in Entry or "f(x)" in Entry or "g(x)" in Entry or "h(x)" in Entry:
+        if "y" in Entry: # or "f(x)" in Entry or "g(x)" in Entry or "h(x)" in Entry:
             solve_for = 'y'
         elif "x" in Entry :
             solve_for = 'x'
-            eq = sp.solve(eq,x)
-            eq = eq[0]
-        if Entry[0] == "x=":
+            eq = sp.solve(eq,x)  #put x as subject
+            eq = eq[0] #might have two solution?
+        if Entry[0] == "x=":  #what is this, try remove it, try x^2 = 4, should have -2 and 2 -> document[code efficient]
             solve_for = 'x'
     elif "=" not in Entry:
         Equal = False
@@ -597,12 +598,12 @@ def Equation(Entry):
     try:
         if Equal == False:
             result = eq
-            return result, solve_for
-        else:
-            result = sp.solve(eq, solve_for)
+            return result, solve_for  #solving for y
+        else: #have equal sign
+            result = sp.solve(eq, solve_for) #try y^2 = 4, y = |x|,  
             if len(result) == 2:
-                return result[1], solve_for
-            return result[0], solve_for
+                return result[1], solve_for #return the positive solution
+            return result[0], solve_for 
     except NotImplementedError as e:
         # Handle equation types not supported by SymPy
         ErrorMsg("Error: SymPy does not support solving this type of equation")
