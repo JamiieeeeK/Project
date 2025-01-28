@@ -9,7 +9,7 @@ from matplotlib.ticker import MultipleLocator, FuncFormatter
 import numpy as np
 import sympy as sp
 from sympy import *
-import csv 
+import csv
 
 root = tk.Tk()
 root.title("Graph Plotting - JK")
@@ -19,12 +19,14 @@ root["bg"] = "lightgrey"
 
 #COORDINATE OOP -----
 class coordOOP:
+    #private attributes as lists
     Xcoordinate = []
     Y1coordinate = []
     Y2coordinate = []
 
-    @classmethod
-    def set_x(cls,x):
+    #set up the methods that will update the list
+    @classmethod #mehotds take the class itself
+    def set_x(cls,x): #cls refer to the class itself
         cls.Xcoordinate = x
     @classmethod
     def set_y1(cls,y1):
@@ -32,7 +34,7 @@ class coordOOP:
     @classmethod
     def set_y2(cls,y2):
         cls.Y2coordinate = y2
-
+    #set up the methods that will return the list
     @classmethod
     def get_x(cls):
         return cls.Xcoordinate
@@ -43,11 +45,15 @@ class coordOOP:
     def get_y2(cls):
         return cls.Y2coordinate
 
+#OOP: location, table location, table
+
 #EQUATION -----
 location = 0
-def Location(i):
+gLocation = 0
+def Location(i): 
     global location
     location = i
+
 
 def InitialField():
     for i in range(0, len(EntryField_list)):
@@ -81,6 +87,7 @@ def CreateField(I):
     EntryField_list[I].bind('<KeyRelease>', GetEquation)
     EntryField_list[I].bind("<Button-1>", lambda x: Location(I))
     EntryField_list[I].bind("<Return>", lambda event: "break")
+    EntryField_list[I].bind("<Tab>", lambda event: "break")
     
     Appearance_field[I] = tk.Frame(field_frame, height=51, width=58, bg='darkgrey')
     Appearance_field[I].grid(row=I, column=0)
@@ -119,23 +126,20 @@ def CreateField(I):
 
 #Colouring ---- 
 COLOUR = [tk.StringVar(root, value='#4f5f9c')]
-rgbEntry= ""
 OpenColour = [False]
-
-def colourcode(i):
-    Colour_block[i].config(bg=f"{COLOUR[i].get()}")
-    Colour_list[i] = COLOUR[i].get().strip()
-    GetEquation()
 
 def SetColour(i):
     #check valid entry document error handling     
     try:
-        Colour_block[i].config(bg=f"{COLOUR[i].get()}")
-        colourcode(i)
+        #Colour_block[i].config(bg=f"{COLOUR[i].get()}")
+        Colour_list[i] = COLOUR[i].get()
+        Colour_list[i] = Colour_list[i].replace(" ", "")
+        COLOUR[i].set(Colour_list[i])
+        Colour_block[i].config(bg=Colour_list[i])
+        GetEquation()
     except:
-        ErrorMsg("wrong rgb")
-            
-    SelectColour(i)
+        ErrorMsg("wrong rgb") 
+    SelectColour(i) #close the widget
 
 def SelectColour(i):
     global ColorSetting
@@ -543,7 +547,7 @@ def ChangeSymbol(equation):
 def ChangeFunc(equation):
     if "f(x)" in equation:
         equation = equation.replace("f(x)", "y")
-    elif "f(x)" in equation:
+    elif "g(x)" in equation:
         equation = equation.replace("g(x)", "y")
     elif "h(x)" in equation:
         equation = equation.replace("h(x)", "y")
@@ -559,7 +563,7 @@ def Equation(Entry):
     solve_for = ''
     Equal = True
 
-    #splitting the Entry into two part in the eq
+    #splitting the Entry into two parts in the eq
     if '=' in Entry:
         lhs_str, rhs_str = Entry.split('=')
         if not is_valid_expression(lhs_str) or not is_valid_expression(rhs_str):
@@ -572,49 +576,49 @@ def Equation(Entry):
            
     else:
         if not is_valid_expression(Entry):
-            raise ValueError("Invalide expression")
+            raise ValueError("Invalid expression")
             ErrorMsg("Equation: Invalid expression")
         try:
-            eq = sp.sympify(Entry.strip())
+            eq = sp.sympify(Entry.strip()) #have no "=", the whole Entry is the equation
         except:
             ErrorMsg("Equation: Invalid expression")
    
         
-    #idemtify solving for which variable
+    #identify solving for which variable
     if "=" in Entry:
         if "y" in Entry: # or "f(x)" in Entry or "g(x)" in Entry or "h(x)" in Entry:
             solve_for = 'y'
-        elif "x" in Entry :
+        elif "x" in Entry : #x is the domain
             solve_for = 'x'
-            eq = sp.solve(eq,x)  #put x as subject
-            eq = eq[0] #might have two solution?
-        if Entry[0] == "x=":  #what is this, try remove it, try x^2 = 4, should have -2 and 2 -> document[code efficient]
-            solve_for = 'x'
+            eq = sp.solve(eq,x) #put x the subject, can be removed!
+            eq = eq[0] #x^2 = 4, x = -2, FIX!, if remove, solve in line 603, return positive
+        if Entry[0] == "x=": #can be removed!
+            solve_for = 'x'  
     elif "=" not in Entry:
         Equal = False
         solve_for = 'y'
 
-#white box test in this procedure, test through every kind of graph that might stimulate each part
-#If problem found, fix it.
-#If some part never used, removed them -> code efficient
+#white box testing in this procedure, test through every kind of graph that might stimulate each part
+#if problem found, fix it
+#if some part never used, remove them -> code efficient
 
     try:
-        if Equal == False:
+        if Equal == False: #solving for y
             result = eq
-            return result, solve_for  #solving for y
+            return result, solve_for
         else: #have equal sign
-            result = sp.solve(eq, solve_for) #try y^2 = 4, y = |x|,  y = |-1|
-            if len(result) == 2:
-                return result[1], solve_for #return the positive solution, print, check
+            result = sp.solve(eq, solve_for) #solve and put subject
+            if len(result) == 2: 
+                return result[1], solve_for #returned the positive y^2 = 4, y = 2
             return result[0], solve_for #only one solution
     except NotImplementedError as e:
         # Handle equation types not supported by SymPy
         ErrorMsg("Error: SymPy does not support solving this type of equation")
     
-    except Exception as e:
+    except Exception as e: #can be anykind of error
         ErrorMsg("Equation: Invalid expression")
         result = eq #if invalid, why still returning something
-        return result, solve_for #print and check
+        return result, solve_for #print
         
 
 #Calculate Values --------
@@ -692,10 +696,14 @@ def GetX(self):
     CalLine()
 
 def CalLine(*args):
-    global xpoint, xValue_slider, xValue_label, line_setting, location, point, gradient_label, gradient
-    eq = EntryField_list[location].get("1.0", tk.END).strip()
+    global xpoint, xValue_slider, xValue_label, line_setting, gLocation, point, gradient_label, gradient
+    eq = EntryField_list[gLocation].get("1.0", tk.END).strip()
     eq = ChangeSymbol(eq)
-    eq, solve_for = Equation(eq)
+    try:
+        eq, solve_for = Equation(eq)
+    except:
+        ErrorMsg("Empty Field")
+        return 
     if solve_for == 'y':
         ypoint = CalY(eq)
         xValue_label.config(text=f"  line intercept at x: {xpoint} y: {ypoint} ")
@@ -710,16 +718,19 @@ def CalLine(*args):
         gradient_label.config(text=f" gradient = 0  ")
     
 
-def LineLocation(I):
-    global location
-    location = I
-    GradientLine()
+def LineLocation(I): 
+    global gLocation
+    gLocation = I
+    GradientLine() #show panel
+
+#whitebox, check printing correct location: Eq: index, Table: column, row
+#Alternative, call GradientLine(I) instead, and set loction with in GradientLine
 
 SetLine = True
 def GradientLine(*args):
-    global location, line_setting,SetLine
+    global gLocation, line_setting,SetLine
     if SetLine == True:
-        line_setting.grid(row=1, rowspan=3, column=1, columnspan=3, padx=2, pady=2)
+        line_setting.grid(row=2, rowspan=3, column=1, columnspan=3, padx=2, pady=2)
         SetLine = False
     elif SetLine == False:
         line_setting.grid_forget()
@@ -857,8 +868,9 @@ def drag_graph(event):
     global dragx, dragy
     #calculate the changes (drag)
     dragx = canvas.get_tk_widget().winfo_x() - originalx + event.x
-    dragy = canvas.get_tk_widget().winfo_y() - originaly + event.y 
-    GetEquation()
+    dragy = canvas.get_tk_widget().winfo_y() - originaly + event.y
+    InitialGraph()
+    canvas.draw()
 
 def UpdateDrag(event):
     global DoMin, DoMax, RaMin, RaMax, dragx, dragy
@@ -874,13 +886,14 @@ def UpdateDrag(event):
     #reset drag
     dragx = 0
     dragy = 0
+    GetEquation()
 
     
 #--------
 #CHANGE PAGE ----
 page = "EQUATION"
 def ShowTable(*args):
-    global page, bestFit_menu
+    global page, bestFit_menu, SetLine
     TGraph_button.config(text="TABLE")
     TGraph_menu.entryconfig(0, label="Equation", command=ShowEquation)
     scroll_table.grid(row=1, column=1, rowspan=6, columnspan=8, pady=4, stick="n")
@@ -891,8 +904,10 @@ def ShowTable(*args):
     page = "TABLE"
     Intercept_button.config(text="BEST FIT LINE")
     Intercept_button.config(menu=bestFit_menu)
-    Intercept_button.unbind("<Button-1>")    
-    
+    Intercept_button.unbind("<Button-1>")
+    if SetLine == False:
+        line_setting.grid_forget()
+        SetLine = True
     
 
 def ShowEquation(*args):
@@ -946,7 +961,7 @@ def TableYLocation(i, column):
     if column == 1:
         table = "y1"
     elif column == 2:
-        table ="y2"
+        table = "y2"
     table_location = int(i)
     
 
@@ -1183,12 +1198,12 @@ def PlotFit(column):
         if fitLine.get() == "SCATTER": #scatter graph
             line1, = ax.plot(x, y, color=y1_rgb.get(), label="y1") 
         else:
-            line1, = ax.plot(x, T, '-', label="y1")
+            line1, = ax.plot(x, T, '-', color=y1_rgb.get(), label="y1")
     elif column=="Y2": #for y2
         if fitLine.get() == "SCATTER": #scatter graph
             line2, = ax.plot(x, y, color=y2_rgb.get(), label="y2")
         else:
-            line2, = ax.plot(x, T, '-', label="y2")
+            line2, = ax.plot(x, T, '-', color=y2_rgb.get(), label="y2")
     ax.legend()
     canvas.draw()
 
@@ -1674,6 +1689,7 @@ def DelValue():
 def ClearValue():
     if page == "EQUATION":
         EntryField_list[location].delete(1.0,"end")
+        GetEquation()
     elif page == "TABLE":
         if table == "x":
             num_xvalues[table_location].delete("1.0", "end")
@@ -1681,6 +1697,7 @@ def ClearValue():
             num_y1values[table_location].delete("1.0", "end")
         elif table == "y2":
             num_y2values[table_location].delete("1.0", "end")
+        GetCoordinate()
         
         
     
