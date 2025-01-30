@@ -45,16 +45,49 @@ class coordOOP:
     def get_y2(cls):
         return cls.Y2coordinate
 
-#OOP: location, table location, table
+#OOP: location, table_location, table
+class locatOOP:
+    location = 0
+    gLocation = 0
+    table = "x"
+    table_location = 0
+
+    @classmethod
+    def set_locat(cls, Index):
+        cls.location = Index
+    @classmethod
+    def get_locat(cls):
+        return cls.location
+    
+    @classmethod
+    def set_gLocat(cls, Index):
+        cls.gLocation = Index
+    @classmethod
+    def get_gLocat(cls):
+        return cls.gLocation
+
+    @classmethod
+    def set_tableX(cls, Index):
+        cls.table = "x"
+        cls.table_location = Index
+    @classmethod
+    def set_tableY(cls, Index, Column):
+        if Column == 1:
+            cls.table = "y1"
+        elif Column == 2:
+            cls.table = "y2"
+        cls.table_location = Index
+    @classmethod
+    def get_table(cls):
+        return cls.table
+    @classmethod
+    def get_tableLocate(cls):
+        return cls.table_location
+    
+    
+    
 
 #EQUATION -----
-location = 0
-gLocation = 0
-def Location(i): 
-    global location
-    location = i
-
-
 def InitialField():
     for i in range(0, len(EntryField_list)):
         CreateField(i)
@@ -85,7 +118,7 @@ def CreateField(I):
     EntryField_list[I].grid(row=I, column=1)
     EntryField_list[I].bind('<ButtonRelease-1>', newField)
     EntryField_list[I].bind('<KeyRelease>', GetEquation)
-    EntryField_list[I].bind("<Button-1>", lambda x: Location(I))
+    EntryField_list[I].bind("<Button-1>", lambda x: locatOOP.set_locat(I))
     EntryField_list[I].bind("<Return>", lambda event: "break")
     EntryField_list[I].bind("<Tab>", lambda event: "break")
     
@@ -119,7 +152,7 @@ def CreateField(I):
     except:
         pass
 
-    Line_list[I] = tk.Button(field_frame, text="⋮", command=lambda:LineLocation(I), height=2, width=2, bg="whitesmoke", font=("Arial", 11))
+    Line_list[I] = tk.Button(field_frame, text="⋮", command=lambda: GradientLine(I), height=2, width=2, bg="whitesmoke", font=("Arial", 11))
     Line_list[I].grid(row=I, column=2)
 
 
@@ -552,7 +585,7 @@ def ChangeFunc(equation):
     elif "h(x)" in equation:
         equation = equation.replace("h(x)", "y")
 
-    print(equation)
+    #print(equation)
     return equation
     
 
@@ -696,8 +729,8 @@ def GetX(self):
     CalLine()
 
 def CalLine(*args):
-    global xpoint, xValue_slider, xValue_label, line_setting, gLocation, point, gradient_label, gradient
-    eq = EntryField_list[gLocation].get("1.0", tk.END).strip()
+    global xpoint, xValue_slider, xValue_label, line_setting, point, gradient_label, gradient
+    eq = EntryField_list[locatOOP.get_gLocat()].get("1.0", tk.END).strip()
     eq = ChangeSymbol(eq)
     try:
         eq, solve_for = Equation(eq)
@@ -718,20 +751,17 @@ def CalLine(*args):
         gradient_label.config(text=f" gradient = 0  ")
     
 
-def LineLocation(I): 
-    global gLocation
-    gLocation = I
-    GradientLine() #show panel
 
 #whitebox, check printing correct location: Eq: index, Table: column, row
 #Alternative, call GradientLine(I) instead, and set loction with in GradientLine
 
 SetLine = True
-def GradientLine(*args):
-    global gLocation, line_setting,SetLine
+def GradientLine(I):
+    global line_setting,SetLine
     if SetLine == True:
         line_setting.grid(row=2, rowspan=3, column=1, columnspan=3, padx=2, pady=2)
         SetLine = False
+        locatOOP.set_gLocat(I)
     elif SetLine == False:
         line_setting.grid_forget()
         SetLine = True
@@ -944,25 +974,6 @@ def PlotCoordinate(Xlist, Ylist, colour):
             else:
                 ErrorMsg("Table: Invalid expression")
         canvas.draw()
-
-       
-        
-#Keyboard Location ------
-table = "x"
-table_location = 0
-def TableXLocation(i):
-    global table, table_location
-    table = "x"
-    table_location = int(i)
-
-
-def TableYLocation(i, column):
-    global table, table_location
-    if column == 1:
-        table = "y1"
-    elif column == 2:
-        table = "y2"
-    table_location = int(i)
     
 
 #Table Field ----
@@ -1078,7 +1089,7 @@ def NewCoordinate(*args):
     num_xvalues[i].bind('<ButtonRelease-1>',NewCoordinate)
     num_xvalues[i].bind('<KeyRelease>',GetCoordinate)
     num_xvalues[i].bind("<Return>", lambda event: "break")
-    num_xvalues[i].bind("<Button-1>", lambda x: TableXLocation(i))
+    num_xvalues[i].bind("<Button-1>", lambda x: locatOOP.set_tableX(i))
     
     
     num_y1values[i] = tk.Text(coordinate_frame, height=1, width=8, bg="whitesmoke", font=("Arial", 17))
@@ -1086,7 +1097,7 @@ def NewCoordinate(*args):
     num_y1values[i].bind('<ButtonRelease-1>',NewCoordinate)
     num_y1values[i].bind('<KeyRelease>',GetCoordinate)
     num_y1values[i].bind("<Return>", lambda event: "break")
-    num_y1values[i].bind("<Button-1>", lambda x: TableYLocation(i, 1))
+    num_y1values[i].bind("<Button-1>", lambda x: locatOOP.set_tableY(i, 1))
     
 
 
@@ -1095,7 +1106,7 @@ def NewCoordinate(*args):
     num_y2values[i].bind('<ButtonRelease-1>',NewCoordinate)
     num_y2values[i].bind('<KeyRelease>',GetCoordinate)
     num_y2values[i].bind("<Return>", lambda event: "break")
-    num_y2values[i].bind("<Button-1>", lambda x: TableYLocation(i, 2))
+    num_y2values[i].bind("<Button-1>", lambda x: locatOOP.set_tableY(i, 2))
 
 
     if i > 0:
@@ -1158,17 +1169,17 @@ def PlotFit(column):
 
     if fitLine.get() == "LINEAR":
         m, c = np.polyfit(X, Y, 1)
-        print(m,c)
+        #print(m,c)
         x = np.linspace(-10, 20, 300)
         T = m*x + c
     elif fitLine.get() == "QUADRATIC":
         a, b, c = np.polyfit(X, Y, 2)
-        print(a, b, c)
+        #print(a, b, c)
         x = np.linspace(-10,20,300)
         T = a*x**2 + b*x + c
     elif fitLine.get() == "CUBIC":
         a, b, c, d = np.polyfit(X, Y, 3)
-        print(a, b, c, d)
+        #print(a, b, c, d)
         x = np.linspace(-10,20,300)
         T = a*x**3 + b*x**2 + c*x + d
     elif fitLine.get() == "EXPONENTIAL":
@@ -1179,7 +1190,7 @@ def PlotFit(column):
         logY = np.log(Y)
         b, logA = np.polyfit(X, logY, 1)
         a = np.exp(logA)
-        print(a, b)
+        #print(a, b)
         x = np.linspace(-10,20,300)
         T = a*np.exp(b*x)
     elif fitLine.get() == "SCATTER":
@@ -1625,34 +1636,34 @@ calculation = ""
 value = ""
 def AddValue(symbol):
     if page == "EQUATION":
-        calculation = EntryField_list[location].get("1.0", tk.END).strip()
+        calculation = EntryField_list[locatOOP.get_locat()].get("1.0", tk.END).strip()
         calculation += symbol
-        EntryField_list[location].delete(1.0, "end")
-        EntryField_list[location].insert(1.0, calculation)
+        EntryField_list[locatOOP.get_locat()].delete(1.0, "end")
+        EntryField_list[locatOOP.get_locat()].insert(1.0, calculation)
         GetEquation()
     elif page == "TABLE":
-        if table == "x":
-            value = num_xvalues[table_location].get("1.0", tk.END).strip()
+        if locatOOP.get_table() == "x":
+            value = num_xvalues[locatOOP.get_tableLocate()].get("1.0", tk.END).strip()
             value += symbol
-            num_xvalues[table_location].delete(1.0, "end")
-            num_xvalues[table_location].insert(1.0, value)
+            num_xvalues[locatOOP.get_tableLocate()].delete(1.0, "end")
+            num_xvalues[locatOOP.get_tableLocate()].insert(1.0, value)
             GetCoordinate()
-        elif table == "y1":
-            value = num_y1values[table_location].get("1.0", tk.END).strip()
+        elif locatOOP.get_table() == "y1":
+            value = num_y1values[locatOOP.get_tableLocate()].get("1.0", tk.END).strip()
             value += symbol
-            num_y1values[table_location].delete(1.0, "end")
-            num_y1values[table_location].insert(1.0, value)
+            num_y1values[locatOOP.get_tableLocate()].delete(1.0, "end")
+            num_y1values[locatOOP.get_tableLocate()].insert(1.0, value)
             GetCoordinate()
-        elif table == "y2":
-            value = num_y2values[table_location].get("1.0", tk.END).strip()
+        elif locatOOP.get_table() == "y2":
+            value = num_y2values[locatOOP.get_tableLocate()].get("1.0", tk.END).strip()
             value += symbol
-            num_y2values[table_location].delete(1.0, "end")
-            num_y2values[table_location].insert(1.0, value)
+            num_y2values[locatOOP.get_tableLocate()].delete(1.0, "end")
+            num_y2values[locatOOP.get_tableLocate()].insert(1.0, value)
             GetCoordinate()
 
 def DelValue():
     if page == "EQUATION":
-        calculation = EntryField_list[location].get("1.0", tk.END).strip()
+        calculation = EntryField_list[locatOOP.get_locat()].get("1.0", tk.END).strip()
         if calculation[len(calculation)-4:len(calculation)] == "sin(" or calculation[len(calculation)-4:len(calculation)] == "cos(" or calculation[len(calculation)-4:len(calculation)] == "tan(":
             calculation = calculation[0:len(calculation)-4]
         elif calculation[len(calculation)-4:len(calculation)] == "f(x)" or calculation[len(calculation)-4:len(calculation)] == "g(x)" or calculation[len(calculation)-4:len(calculation)] == "h(x)":
@@ -1663,40 +1674,40 @@ def DelValue():
             calculation = calculation[0:len(calculation)-4]
         else:
             calculation = calculation[0: len(calculation)-1]
-        EntryField_list[location].delete(1.0, "end")
-        EntryField_list[location].insert(1.0, calculation)
+        EntryField_list[locatOOP.get_locat()].delete(1.0, "end")
+        EntryField_list[locatOOP.get_locat()].insert(1.0, calculation)
         GetEquation()
     elif page == "TABLE":
-        if table == "x":
-            value = num_xvalues[table_location].get("1.0", tk.END).strip()
+        if locatOOP.get_table() == "x":
+            value = num_xvalues[locatOOP.get_tableLocate()].get("1.0", tk.END).strip()
             value = value[0:len(value)-1]
-            num_xvalues[table_location].delete(1.0, "end")
-            num_xvalues[table_location].insert(1.0, value)
-        elif table == "y1":
-            value = num_y1values[table_location].get("1.0", tk.END).strip()
+            num_xvalues[locatOOP.get_tableLocate()].delete(1.0, "end")
+            num_xvalues[locatOOP.get_tableLocate()].insert(1.0, value)
+        elif locatOOP.get_table() == "y1":
+            value = num_y1values[locatOOP.get_tableLocate()].get("1.0", tk.END).strip()
             value = value[0:len(value)-1]
-            num_y1values[table_location].delete(1.0, "end")
-            num_y1values[table_location].insert(1.0, value)
-        elif table == "y2":
-            value = num_y2values[table_location].get("1.0", tk.END).strip()
+            num_y1values[locatOOP.get_tableLocate()].delete(1.0, "end")
+            num_y1values[locatOOP.get_tableLocate()].insert(1.0, value)
+        elif locatOOP.get_table() == "y2":
+            value = num_y2values[locatOOP.get_tableLocate()].get("1.0", tk.END).strip()
             value = value[0:len(value)-1]
-            num_y2values[table_location].delete(1.0, "end")
-            num_y2values[table_location].insert(1.0, value)
+            num_y2values[locatOOP.get_tableLocate()].delete(1.0, "end")
+            num_y2values[locatOOP.get_tableLocate()].insert(1.0, value)
         GetCoordinate()
         
 
 
 def ClearValue():
     if page == "EQUATION":
-        EntryField_list[location].delete(1.0,"end")
+        EntryField_list[locatOOP.get_locat()].delete(1.0,"end")
         GetEquation()
     elif page == "TABLE":
-        if table == "x":
-            num_xvalues[table_location].delete("1.0", "end")
-        elif table == "y1":
-            num_y1values[table_location].delete("1.0", "end")
-        elif table == "y2":
-            num_y2values[table_location].delete("1.0", "end")
+        if locatOOP.get_table() == "x":
+            num_xvalues[locatOOP.get_tableLocate()].delete("1.0", "end")
+        elif locatOOP.get_table() == "y1":
+            num_y1values[locatOOP.get_tableLocate()].delete("1.0", "end")
+        elif locatOOP.get_table() == "y2":
+            num_y2values[locatOOP.get_tableLocate()].delete("1.0", "end")
         GetCoordinate()
         
         
