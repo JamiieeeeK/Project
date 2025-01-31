@@ -437,15 +437,16 @@ def Graph2(Equation, SolveFor, colour, style):
 
 
     except Exception as e:
-        ErrorMsg("Equation: Invalid expression")
+        ErrorMsg("Equation: Invalid expression (5)")
     try:
         if x_vals is not None and y_vals is not None:
             if plotted == False:
                 Equation = sp.factor(Equation)
                 ax.plot(x_vals, y_vals, linestyle=style, label=f"{SolveFor} = {Equation}", color=colour)
                 ax.legend()
+        error_message.grid_forget()
     except:
-        ErrorMsg("Equation: Invalid expression")
+        ErrorMsg("Equation: Invalid expression (6)")
     try:
         for i in range(0, len(Point)):
             ax.plot(Point[i][0], Point[i][1], '.', color="black")
@@ -540,14 +541,15 @@ def GetEquation(*args):
         equation = ChangeFunc(equation)
         try:
             result, solve_for = Equation(equation)
+            print("result:", result)
             colour = Colour_list[i]
             style = Style_list[i]
             Graph2(result, solve_for, colour, style)
             if plotforinter == True:
                 Xintercept, Yintercept = PtOfIntercept(result, solve_for)
-            error_message.grid_forget()
         except:
-            ErrorMsg("Equation: Invalid expression")
+            pass
+            #ErrorMsg("Equation: Invalid expression")
     if plotforinter == True:
         print("x intercept:", Xintercept)
         print("y intercept: ", Yintercept)
@@ -600,36 +602,33 @@ def Equation(Entry):
     if '=' in Entry:
         lhs_str, rhs_str = Entry.split('=')
         if not is_valid_expression(lhs_str) or not is_valid_expression(rhs_str):
-            raise ValueError("Equation: Invalid expression")
+            ErrorMsg("Equation: Invalid expression (1)")
+            return
         lhs = sp.sympify(lhs_str.strip())
         rhs = sp.sympify(rhs_str.strip())
         eq = sp.Eq(lhs, rhs)
         #if "f(x)" in Entry or "g(x)" in Entry or "h(x)" in Entry :
         #    eq = rhs
-           
     else:
         if not is_valid_expression(Entry):
-            raise ValueError("Invalid expression")
-            ErrorMsg("Equation: Invalid expression")
-        try:
-            eq = sp.sympify(Entry.strip()) #have no "=", the whole Entry is the equation
-        except:
-            ErrorMsg("Equation: Invalid expression")
+            ErrorMsg("Equation: Invalid expression (2)")
+            return
+    print("eq:", eq)
    
         
     #identify solving for which variable
     if "=" in Entry:
-        if "y" in Entry: # or "f(x)" in Entry or "g(x)" in Entry or "h(x)" in Entry:
+        if "y" in Entry: #or "f(x)" in Entry or "g(x)" in Entry or "h(x)" in Entry:
             solve_for = 'y'
         elif "x" in Entry : #x is the domain
             solve_for = 'x'
-            eq = sp.solve(eq,x) #put x the subject, can be removed!
-            eq = eq[0] #x^2 = 4, x = -2, FIX!, if remove, solve in line 603, return positive
-        if Entry[0] == "x=": #can be removed!
-            solve_for = 'x'  
+            eq = sp.solve(eq,x) #put x the subject, can be removed!?
+            eq = eq[0] #x^2 = 4, x = -2, FIX!, if remove, solve in line 603, return positive 
     elif "=" not in Entry:
         Equal = False
         solve_for = 'y'
+
+    print("Equal =", Equal, "solve for =", solve_for)
 
 #white box testing in this procedure, test through every kind of graph that might stimulate each part
 #if problem found, fix it
@@ -644,14 +643,17 @@ def Equation(Entry):
             if len(result) == 2: 
                 return result[1], solve_for #returned the positive y^2 = 4, y = 2
             return result[0], solve_for #only one solution
+        error_message.grid_forget()
     except NotImplementedError as e:
         # Handle equation types not supported by SymPy
         ErrorMsg("Error: SymPy does not support solving this type of equation")
+        return 0, 0
     
     except Exception as e: #can be anykind of error
-        ErrorMsg("Equation: Invalid expression")
+        ErrorMsg("Equation: Invalid expression (4)")
         result = eq #if invalid, why still returning something
         return result, solve_for #print
+
         
 
 #Calculate Values --------
@@ -820,10 +822,10 @@ LabelY.set("y axis")
 def SetDoRan(*args):
     global DoMin, DoMax, RaMin, RaMax
     try:
-        DoMin = float(DomainMin.get())
-        DoMax = float(DomainMax.get())
-        RaMin = float(RangeMin.get())
-        RaMax = float(RangeMax.get())
+        DoMin = float(DomainMin.get().replace(" ", "") )
+        DoMax = float(DomainMax.get().replace(" ", "") )
+        RaMin = float(RangeMin.get().replace(" ", "") )
+        RaMax = float(RangeMax.get().replace(" ", "") )
         GetEquation()
     except:
         if unit.get() == 'RADIAN':
