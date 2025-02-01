@@ -544,7 +544,8 @@ def GetEquation(*args):
             print("result:", result)
             colour = Colour_list[i]
             style = Style_list[i]
-            Graph2(result, solve_for, colour, style)
+            for item in result:
+                Graph2(item, solve_for, colour, style)
             if plotforinter == True:
                 Xintercept, Yintercept = PtOfIntercept(result, solve_for)
         except:
@@ -597,6 +598,7 @@ def Equation(Entry):
     Entry = Entry.replace(" ", "")
     solve_for = ''
     Equal = True
+    result = []
 
     #splitting the Entry into two parts in the eq
     if '=' in Entry:
@@ -607,52 +609,40 @@ def Equation(Entry):
         lhs = sp.sympify(lhs_str.strip())
         rhs = sp.sympify(rhs_str.strip())
         eq = sp.Eq(lhs, rhs)
-        #if "f(x)" in Entry or "g(x)" in Entry or "h(x)" in Entry :
-        #    eq = rhs
     else:
         if not is_valid_expression(Entry):
             ErrorMsg("Equation: Invalid expression (2)")
             return
+        eq = sp.sympify(Entry.strip())
     print("eq:", eq)
    
         
     #identify solving for which variable
     if "=" in Entry:
-        if "y" in Entry: #or "f(x)" in Entry or "g(x)" in Entry or "h(x)" in Entry:
+        if "y" in Entry:
             solve_for = 'y'
         elif "x" in Entry : #x is the domain
             solve_for = 'x'
-            eq = sp.solve(eq,x) #put x the subject, can be removed!?
-            eq = eq[0] #x^2 = 4, x = -2, FIX!, if remove, solve in line 603, return positive 
     elif "=" not in Entry:
         Equal = False
         solve_for = 'y'
 
     print("Equal =", Equal, "solve for =", solve_for)
 
-#white box testing in this procedure, test through every kind of graph that might stimulate each part
 #if problem found, fix it
 #if some part never used, remove them -> code efficient
 
     try:
         if Equal == False: #solving for y
-            result = eq
-            return result, solve_for
+            result.append(eq)
         else: #have equal sign
             result = sp.solve(eq, solve_for) #solve and put subject
-            if len(result) == 2: 
-                return result[1], solve_for #returned the positive y^2 = 4, y = 2
-            return result[0], solve_for #only one solution
         error_message.grid_forget()
-    except NotImplementedError as e:
-        # Handle equation types not supported by SymPy
-        ErrorMsg("Error: SymPy does not support solving this type of equation")
-        return 0, 0
-    
+        return result, solve_for
     except Exception as e: #can be anykind of error
         ErrorMsg("Equation: Invalid expression (4)")
-        result = eq #if invalid, why still returning something
-        return result, solve_for #print
+        #result.append(eq) #if invalid, why still returning something
+        return# result, solve_for #print
 
         
 
@@ -1370,6 +1360,9 @@ def clear(*args):
     coordOOP.set_x([])
     coordOOP.set_y1([])
     coordOOP.set_y2([])
+    locatOOP.set_locat(0)
+    locatOOP.set_gLocat(0)
+    locatOOP.set_tableX(0)
     Point = []
     Colour_block = ['']
     ColorSetting = ['']
