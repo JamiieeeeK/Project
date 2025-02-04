@@ -55,6 +55,8 @@ class locatOOP:
     @classmethod
     def set_locat(cls, Index):
         cls.location = Index
+        if SetLine == False:
+            GradientLine(0)
     @classmethod
     def get_locat(cls):
         return cls.location
@@ -363,6 +365,14 @@ def is_trig(eq):
         except:
             return False
     return False
+def is_tan(eq):
+    try:
+        if eq.has(sp.tan):
+            return True
+    except:
+        return False
+    return False
+
 #----------
 
 def is_valid_expression(expr):
@@ -401,6 +411,8 @@ def Graph2(Equation, SolveFor, colour, style):
                         x_vals = xR_vals
                     elif unit.get() == "DEGREE":
                         x_vals = np.degrees(xR_vals)
+                    if is_tan(Equation) == True:
+                        y_vals[:-1][np.diff(y_vals) < 0] = np.nan
                 else:
                     x_vals = np.linspace(xMin,xMax,linspaceX)
                     y_vals = f_np(x_vals)
@@ -466,6 +478,7 @@ Yintercept = []
 def PtOfIntercept(expr, solve_for):
     Xintercept = []
     Yintercept = []
+
     equation = str(expr)
     if "x" in equation:
         # for x = 0
@@ -528,7 +541,6 @@ def PlotIntercept():
     GetEquation()
  
 
-
 #PROCESS_GRAPH -----
 def GetEquation(*args):
     global plotforinter
@@ -541,21 +553,22 @@ def GetEquation(*args):
         equation = ChangeFunc(equation)
         try:
             result, solve_for = Equation(equation)
-            print("result:", result)
+            #print("result:", result)
             colour = Colour_list[i]
             style = Style_list[i]
             for item in result:
                 Graph2(item, solve_for, colour, style)
             if plotforinter == True:
-                Xintercept, Yintercept = PtOfIntercept(result, solve_for)
+                for item in result:
+                    Xintercept, Yintercept = PtOfIntercept(item, solve_for)
+                    print("x intercept:", Xintercept)
+                    print("y intercept: ", Yintercept)
+                    print("--------------")
+                    PlotCoordinate(Xintercept, Yintercept, "black")
         except:
             pass
             #ErrorMsg("Equation: Invalid expression")
-    if plotforinter == True:
-        print("x intercept:", Xintercept)
-        print("y intercept: ", Yintercept)
-        print("--------------")
-        PlotCoordinate(Xintercept, Yintercept, "black")
+
 
     if len(num_xvalues) >= 2:
         PlotCoordinate(coordOOP.get_x(), coordOOP.get_y1(), y1_rgb.get())
@@ -614,7 +627,7 @@ def Equation(Entry):
             ErrorMsg("Equation: Invalid expression (2)")
             return
         eq = sp.sympify(Entry.strip())
-    print("eq:", eq)
+    #print("eq:", eq)
    
         
     #identify solving for which variable
@@ -627,7 +640,7 @@ def Equation(Entry):
         Equal = False
         solve_for = 'y'
 
-    print("Equal =", Equal, "solve for =", solve_for)
+    #print("Equal =", Equal, "solve for =", solve_for)
 
 #if problem found, fix it
 #if some part never used, remove them -> code efficient
@@ -641,8 +654,7 @@ def Equation(Entry):
         return result, solve_for
     except Exception as e: #can be anykind of error
         ErrorMsg("Equation: Invalid expression (4)")
-        #result.append(eq) #if invalid, why still returning something
-        return# result, solve_for #print
+        return
 
         
 
@@ -692,11 +704,10 @@ def CalGradient(eq):
 Point = []
 def AddLine(*args):
     global xpoint, ypoint, gradient
-    LineEq = f"y-{ypoint} = {gradient}*(x-{xpoint})"
-    LineEq, solve_for = Equation(LineEq)
+    LineEq = f"y-{ypoint}= {gradient}*(x-{xpoint})"
+    LineEq = sp.sympify(f"{gradient}*(x-{xpoint})+{ypoint}")
     i = len(EntryField_list)-1
-    EntryField_list[i].insert(1.0, LineEq)
-    
+    EntryField_list[i].insert(1.0, f"y = {LineEq}")
     Point.append([xpoint,ypoint])
     canvas.draw()
     
@@ -709,12 +720,12 @@ gradient=0.000
 eq = ''
 xValue = tk.StringVar(root, value='0.000')
 LineType = "TANGENT"
-def SetX(self):
+def SetX(self): #x entry
     global xpoint, xValue, xValue_slider
     xpoint = float(xValue.get())
     xValue_slider.set(xpoint)
     
-def GetX(self):
+def GetX(self): #x slider
     global xpoint, xValue_slider, xValue
     xpoint = float(xValue_slider.get())
     xValue.set(xpoint)
@@ -726,6 +737,7 @@ def CalLine(*args):
     eq = ChangeSymbol(eq)
     try:
         eq, solve_for = Equation(eq)
+        eq = eq[0]
     except:
         ErrorMsg("Empty Field")
         return 
@@ -774,7 +786,7 @@ def ChangeType(*args):
 
     
 def lineFrame(*args):
-    global GradientLine_Frame, line_setting, xValue_label, xValue_slider, xValue_enter, gradient_label, TLine_button, TLine_menu
+    global line_setting, xValue_label, xValue_slider, xValue_enter, gradient_label, TLine_button, TLine_menu
     Label = tk.Label(line_setting, text="Tangent/Normal Line", bg="whitesmoke", font=14)
     Label.grid(row=0, column=1, columnspan=6, pady=5)
     xValue_label = tk.Label(line_setting, text=f"  line intercept at x: {xpoint} y: {ypoint} ", bg="whitesmoke", font=12)
@@ -960,11 +972,9 @@ def PlotCoordinate(Xlist, Ylist, colour):
             x = float(Xlist[i])
             y = float(Ylist[i])
             ax.plot(x, y, '.', color=colour)
+            error_message.grid_forget()
         except:
-            if Xlist[i] == "" or Ylist[i] == "":
-                ErrorMsg("")#Table: empty")
-            else:
-                ErrorMsg("Table: Invalid expression")
+            ErrorMsg("Table: Invalid expression")
         canvas.draw()
     
 
@@ -1161,17 +1171,17 @@ def PlotFit(column):
 
     if fitLine.get() == "LINEAR":
         m, c = np.polyfit(X, Y, 1)
-        #print(m,c)
+        print(m,c)
         x = np.linspace(-10, 20, 300)
         T = m*x + c
     elif fitLine.get() == "QUADRATIC":
         a, b, c = np.polyfit(X, Y, 2)
-        #print(a, b, c)
+        print(a, b, c)
         x = np.linspace(-10,20,300)
         T = a*x**2 + b*x + c
     elif fitLine.get() == "CUBIC":
         a, b, c, d = np.polyfit(X, Y, 3)
-        #print(a, b, c, d)
+        print(a, b, c, d)
         x = np.linspace(-10,20,300)
         T = a*x**3 + b*x**2 + c*x + d
     elif fitLine.get() == "EXPONENTIAL":
@@ -1182,7 +1192,7 @@ def PlotFit(column):
         logY = np.log(Y)
         b, logA = np.polyfit(X, logY, 1)
         a = np.exp(logA)
-        #print(a, b)
+        print(a, b)
         x = np.linspace(-10,20,300)
         T = a*np.exp(b*x)
     elif fitLine.get() == "SCATTER":
@@ -1257,8 +1267,6 @@ def GetCoordinate(*args):
             InitialGraph()
             PlotCoordinate(coordOOP.get_x(), coordOOP.get_y1(), y1_rgb.get())
             PlotCoordinate(coordOOP.get_x(), coordOOP.get_y2(), y2_rgb.get()) 
-
-            
     except:
         ErrorMsg("Invalid Value Entered")
 
@@ -1366,9 +1374,8 @@ def clear(*args):
     Point = []
     Colour_block = ['']
     ColorSetting = ['']
-    Colour_list = [''] 
-    COLOUR = []
-    COLOUR.append(tk.StringVar(root, value='#000000'))
+    Colour_list = ['']
+    COLOUR = [tk.StringVar(root, value='#4f5f9c')]
     Style_block = ['']
     Style_list = ['solid']
     Style_choice = ['']
@@ -1855,3 +1862,4 @@ Line_list = ['1']
 InitialField()
 InitialGraph()
 root.mainloop()
+
