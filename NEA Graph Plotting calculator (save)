@@ -6,17 +6,19 @@ from matplotlib.figure import Figure
 from matplotlib import pyplot as plt
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg, NavigationToolbar2Tk
 from matplotlib.ticker import MultipleLocator, FuncFormatter
+import matplotlib.ticker as mticker
 import numpy as np
 import sympy as sp
 from sympy import *
 import csv
+
 
 root = tk.Tk()
 root.title("Graph Plotting - JK")
 root.geometry("930x700")
 root["bg"] = "lightgrey"
 
-
+current_line = None
 #COORDINATE OOP -----
 class coordOOP:
     #private attributes as lists
@@ -279,18 +281,14 @@ def InitialGraph():
 
     #set up the default values
     if unit.get() == 'RADIAN': #for radian
-        xmin = -2*np.pi
-        xmax = 4*np.pi
         ax.xaxis.set_major_locator(MultipleLocator(base=np.pi))
         ax.xaxis.set_major_formatter(FuncFormatter(format_func))
         ax.tick_params(axis='x', direction='inout', length=4, width=1, colors='black')
     elif unit.get() == 'DEGREE': #for degree
-        xmin = -90
-        xmax = 360
+        ax.xaxis.set_major_locator(mticker.AutoLocator())
+        ax.xaxis.set_major_formatter(mticker.ScalarFormatter())
+        ax.xaxis.get_major_formatter().set_scientific(False)
 
-    #range value is the same for different unit
-    ymin = -5
-    ymax = 5
 
     dragx = dragx/2.5
     dragy = dragy/2.5
@@ -384,8 +382,7 @@ def is_valid_expression(expr):
 
 
 def Graph2(Equation, SolveFor, colour, style):
-    InitialGraph()
-    global y_vals, x_vals, DomainMin, DomainMax
+    global y_vals, x_vals, DomainMin, DomainMax, Line
     x_vals = []
     y_vals = []
     xMin = int(round(DoMin,0))-10
@@ -401,6 +398,7 @@ def Graph2(Equation, SolveFor, colour, style):
                 y_val = float(Equation)
                 x_vals = np.linspace(xMin, xMax, linspaceX)
                 y_vals = np.full_like(x_vals, y_val)
+                #print("simple")
             else:     
                 f_np = sp.lambdify(x, Equation, 'numpy')
                 if is_trig(Equation) == True:
@@ -411,8 +409,9 @@ def Graph2(Equation, SolveFor, colour, style):
                         x_vals = xR_vals
                     elif unit.get() == "DEGREE":
                         x_vals = np.degrees(xR_vals)
-                    if is_tan(Equation) == True:
-                        y_vals[:-1][np.diff(y_vals) < 0] = np.nan
+                    #if is_tan(Equation) == True:
+                    #    y_vals[:-1][np.diff(y_vals) < 0] = np.nan
+                    #    print("tan?")
                 else:
                     x_vals = np.linspace(xMin,xMax,linspaceX)
                     y_vals = f_np(x_vals)
@@ -435,6 +434,7 @@ def Graph2(Equation, SolveFor, colour, style):
                 if is_trig(Equation):
                     yR_vals = np.linspace(yMin,yMax,linspaceY)
                     x_vals = f_np(yR_vals)
+                    print("x trig")
 
                     if unit.get() == "RADIAN":
                         y_vals = yR_vals
@@ -443,7 +443,7 @@ def Graph2(Equation, SolveFor, colour, style):
                 else:
                     y_vals = np.linspace(yMin,yMax,linspaceY)
                     x_vals = f_np(y_vals)
-            ax.axvline(x=float(Equation), linestyle=style, label=f"x = {str(Equation)}", color=colour)
+            current_line, = ax.axvline(x=float(Equation), linestyle=style, label=f"x = {str(Equation)}", color=colour)
             ax.legend()
             plotted = True
 
@@ -454,7 +454,7 @@ def Graph2(Equation, SolveFor, colour, style):
         if x_vals is not None and y_vals is not None:
             if plotted == False:
                 Equation = sp.factor(Equation)
-                ax.plot(x_vals, y_vals, linestyle=style, label=f"{SolveFor} = {Equation}", color=colour)
+                current_line, = ax.plot(x_vals, y_vals, linestyle=style, label=f"{SolveFor} = {Equation}", color=colour)
                 ax.legend()
         error_message.grid_forget()
     except:
@@ -465,6 +465,11 @@ def Graph2(Equation, SolveFor, colour, style):
     except:
         pass
     canvas.draw()
+
+    try:
+        return current_line
+    except:
+        pass
 
 x, y, z = sp.symbols('x y z')
 f = Function('f')(x)
@@ -530,23 +535,34 @@ def ChangePi(list):
             list[i] = sp.deg(item)         
     return list
 
-
+InterCoord = []
 plotforinter = False
 def PlotIntercept():
-    global plotforinter
+    global plotforinter, InterCoord
+    temp = []
     if plotforinter == False:
         plotforinter = True
+        GetEquation()
     elif plotforinter == True:
         plotforinter = False
-    GetEquation()
- 
+        for Coord in InterCoord:
+            Coord.remove()
+        canvas.draw()
 
+ 
+Line = []
 #PROCESS_GRAPH -----
 def GetEquation(*args):
-    global plotforinter
-    ax.clear()
-    canvas.draw()
-
+    global plotforinter, InterCoord, Line
+    InitialGraph()
+    InterCoord = []
+    try:
+        for CurLine in Line:
+            CurLine.remove()
+        canvas.draw()
+    except:
+        pass
+    Line=[]
     for i in range(0,len(EntryField_list)-1):
         Equation_list[i] = EntryField_list[i].get("1.0", tk.END).strip()
         equation = ChangeSymbol(Equation_list[i])
@@ -557,25 +573,34 @@ def GetEquation(*args):
             colour = Colour_list[i]
             style = Style_list[i]
             for item in result:
-                Graph2(item, solve_for, colour, style)
+                current_line = Graph2(item, solve_for, colour, style)
+                Line.append(current_line)
             if plotforinter == True:
                 for item in result:
                     Xintercept, Yintercept = PtOfIntercept(item, solve_for)
                     print("x intercept:", Xintercept)
                     print("y intercept: ", Yintercept)
                     print("--------------")
-                    PlotCoordinate(Xintercept, Yintercept, "black")
+                    Coord = PlotCoordinate(Xintercept, Yintercept, "black")
+                    for coor in Coord:
+                        InterCoord.append(coor)
         except:
-            pass
-            #ErrorMsg("Equation: Invalid expression")
+            if Equation_list[i] == "":
+                ErrorMsg("Equation: Empty Entry")
 
+    canvas.draw()
 
-    if len(num_xvalues) >= 2:
-        PlotCoordinate(coordOOP.get_x(), coordOOP.get_y1(), y1_rgb.get())
-        PlotCoordinate(coordOOP.get_x(), coordOOP.get_y2(), y2_rgb.get())
+    #if len(num_xvalues) >= 2:
+    #    if current_coord:
+    #        current_coord.remove()
+    #    PlotCoordinate(coordOOP.get_x(), coordOOP.get_y1(), y1_rgb.get())
+    #    PlotCoordinate(coordOOP.get_x(), coordOOP.get_y2(), y2_rgb.get())
                 
-    else:
-        pass
+
+
+
+        
+
 
 def ChangeSymbol(equation):
     if "π" in equation:
@@ -632,7 +657,9 @@ def Equation(Entry):
         
     #identify solving for which variable
     if "=" in Entry:
-        if "y" in Entry:
+        if Entry[0] == "x" and Entry[1] == "=" :
+            solve_for = 'x'
+        elif "y" in Entry:
             solve_for = 'y'
         elif "x" in Entry : #x is the domain
             solve_for = 'x'
@@ -661,41 +688,42 @@ def Equation(Entry):
 #Calculate Values --------
 def CalY(eq):
     global xpoint, ypoint
-    if is_trig(eq) == True:
+    if is_trig(eq) == True: #check if it's trig equation
         if unit.get() == "DEGREE":
-            xRpoint = sp.rad(xpoint)
-            ypoint = eq.subs(x, xRpoint).evalf()
+            xRpoint = sp.rad(xpoint) #change from degree to radian
+            ypoint = eq.subs(x, xRpoint).evalf() #sub x into eq
             ypoint = round(ypoint, 3)
-        elif unit.get() == "RADIAN":
-            ypoint = eq.subs(x, xpoint).evalf()
+        elif unit.get() == "RADIAN": #stay in radian
+            ypoint = eq.subs(x, xpoint).evalf() #sub x into eq
             ypoint=round(ypoint,3)
     else:
-            ypoint = eq.subs(x, xpoint)
+            ypoint = eq.subs(x, xpoint) #sub x into eq
             ypoint = round(ypoint,2)
     eq = ''
     
-    if str(ypoint)[-12:] == "000000000000":
+    if str(ypoint)[-12:] == "000000000000": #remove 0s in float number
         ypoint = float(str(ypoint)[:-12])
-        
-    if str(ypoint)== "nan":
+    #ypoint = str(ypoint).rstrip('0')     
+    if str(ypoint)== "nan": #remove nan
         return "null"
     return ypoint
 
 def CalGradient(eq):
     global xpoint, ypoint, gradient
-    differentiate = sp.diff(eq,x)
+    differentiate = sp.diff(eq,x) #differentiate the equation
     if is_trig(differentiate) == True:
         if unit.get() == "DEGREE":
-            xRpoint = sp.rad(xpoint)
+            xRpoint = sp.rad(xpoint) #convert into radian values
+            #substitute and convert back to degree
             gradient = differentiate.subs(x,xRpoint) * (3.1415926/180)
         elif unit.get() == "RADIAN":
-            gradient = differentiate.subs(x, xpoint)
+            gradient = differentiate.subs(x, xpoint) #sub x
     else:
-        gradient = differentiate.subs(x,xpoint)
-    if LineType == "NORMAL":
+        gradient = differentiate.subs(x,xpoint) #sub x
+    if LineType == "NORMAL": #normal is -1/gradient
         gradient = -1*(1/gradient)
-    gradient = round(gradient, 3)
-    if str(gradient)== "nan":
+    gradient = round(gradient, 5)
+    if str(gradient)== "nan": #removed nan
         return "null"
     return gradient
 
@@ -704,53 +732,61 @@ def CalGradient(eq):
 Point = []
 def AddLine(*args):
     global xpoint, ypoint, gradient
+    #form the equation and simplify
     LineEq = f"y-{ypoint}= {gradient}*(x-{xpoint})"
     LineEq = sp.sympify(f"{gradient}*(x-{xpoint})+{ypoint}")
+    LineEq = str(LineEq)
     i = len(EntryField_list)-1
+    #Insert the equation to the empty entry field
     EntryField_list[i].insert(1.0, f"y = {LineEq}")
+    #Add the point into a list, for later plot on graph
     Point.append([xpoint,ypoint])
     canvas.draw()
     
-    newField()
+    newField() #insert a new entry field
+    
 
 #TANGENT/NORMAL LINE -----
-xpoint=000.00
-ypoint=00.000
-gradient=0.000
-eq = ''
-xValue = tk.StringVar(root, value='0.000')
-LineType = "TANGENT"
-def SetX(self): #x entry
+xpoint=000.00 #variable to store x coordinate
+ypoint=00.000 #variable to store y coordinate
+gradient=0.000 #variable to store the gradient
+eq = '' #variable to store the equation
+xValue = tk.StringVar(root, value='0.000') #variable for the x entry
+LineType = "TANGENT" 
+def SetX(self): #call by entry
     global xpoint, xValue, xValue_slider
-    xpoint = float(xValue.get())
-    xValue_slider.set(xpoint)
+    xpoint = float(xValue.get()) #get the value from the entry
+    xValue_slider.set(xpoint) #update the slider
     
-def GetX(self): #x slider
+def GetX(self): #call by slider
     global xpoint, xValue_slider, xValue
-    xpoint = float(xValue_slider.get())
-    xValue.set(xpoint)
-    CalLine()
+    xpoint = float(xValue_slider.get()) #get the value from slider
+    xValue.set(xpoint) #set to entry
+    CalLine() #call procedure to calculate
 
 def CalLine(*args):
     global xpoint, xValue_slider, xValue_label, line_setting, point, gradient_label, gradient
+    #get equation from the entryfield
     eq = EntryField_list[locatOOP.get_gLocat()].get("1.0", tk.END).strip()
     eq = ChangeSymbol(eq)
     try:
-        eq, solve_for = Equation(eq)
+        eq, solve_for = Equation(eq) #convert to sympy format equation
         eq = eq[0]
-    except:
+    except: #entry is empty
         ErrorMsg("Empty Field")
-        return 
+        return #exit the procedure
     if solve_for == 'y':
-        ypoint = CalY(eq)
+        ypoint = CalY(eq) #calculate the y coordinate
+        #update the label with xy coordinate
         xValue_label.config(text=f"  line intercept at x: {xpoint} y: {ypoint} ")
-        point, = ax.plot(xpoint,ypoint, '.', color="black")
+        point, = ax.plot(xpoint,ypoint, '.', color="black") #plot the point
         canvas.draw()
-        point.remove()
-        gradient = CalGradient(eq)
-        gradient_label.config(text=f" gradient = {gradient}  ")
+        point.remove() #remove in next call
+        gradient = CalGradient(eq) #calculate the gradient
+        gradient_label.config(text=f" gradient = {gradient}  ") #update the label
         
     else:
+        #cannot be calculated
         xValue_label.config(text=f"  line intercept at x: {xpoint} y: null ")
         gradient_label.config(text=f" gradient = 0  ")
     
@@ -962,50 +998,74 @@ def ShowEquation(*args):
     
 #---------
 #Process coordinate ----
+current_coord = None
 def PlotCoordinate(Xlist, Ylist, colour):
     x = 0
     y = 0
+    currentCoord=[]
     InitialGraph()
-
     for i in range(0,len(Xlist)):
         try:
             x = float(Xlist[i])
             y = float(Ylist[i])
-            ax.plot(x, y, '.', color=colour)
+            current_coord, = ax.plot(x, y, '.', color=colour)
+            currentCoord.append(current_coord)
             error_message.grid_forget()
         except:
             ErrorMsg("Table: Invalid expression")
         canvas.draw()
+    return currentCoord
     
 
+def PlotCoordinate(Xlist, Ylist, colour):
+    #take both list and the colour as the parameter
+    x = 0
+    y = 0
+    InitialGraph()
+    for i in range(0,len(Xlist)):
+        try:
+            x = float(Xlist[i])
+            y = float(Ylist[i])
+            #plot in the entered colour
+            ax.plot(x, y, '.', color=colour) 
+            error_message.grid_forget()
+        except:
+            ErrorMsg("Table: Invalid expression")
+        canvas.draw()
+
+
+
 #Table Field ----
-Col = "X"              
+Col = "X" #state the column that is activated             
 def ActY1(*args):
     global Col
     global y1_coordinate, num_y1values, y1_colour
-    y1_coordinate.config(state="normal", bd=1, bg="#FDFDFD")
-    y1_coordinate.insert(1.0, "   y₁")
-    y1_coordinate.config(state="disable")
+    #turn the colour and the border
+    y1_coordinate.config(state="normal", bd=1, bg="#FDFDFD") 
+    y1_coordinate.insert(1.0, "   y₁") #add in title
+    y1_coordinate.config(state="disable") #fixed text
     #unbind
     for I in range(0, len(num_y1values)):
         num_y1values[I].unbind("<<Modified>>")
-        num_y1values[I].config(bg="#FDFDFD")
-        num_y2values[I].config(bd=1)
-    Col = "Y1"
+        num_y1values[I].config(bg="#FDFDFD") #change colour
+        num_y2values[I].config(bd=1) #show border
+    Col = "Y1" #state Y1 is activated
+
     y1_colour.grid(row=1, column=4, pady=4, padx=4, sticky="e")
     
         
 def ActY2(*args):
     global Col
     global y2_coordinate, num_y2values, y2_colour
+    #change the colour and the border
     y2_coordinate.config(state="normal", bd=1, bg="#FDFDFD")
-    y2_coordinate.insert(1.0, "   y₂")
-    y2_coordinate.config(state="disable")
+    y2_coordinate.insert(1.0, "   y₂") #add in title
+    y2_coordinate.config(state="disable") #fixed text
     #unbind
     for I in range(0, len(num_y2values)):
         num_y2values[I].unbind("<<Modified>>")
-        num_y2values[I].config(bd=1, bg="#FDFDFD")
-    Col = "Y2"
+        num_y2values[I].config(bd=1, bg="#FDFDFD") #change colour
+    Col = "Y2" #state Y2 is activated
     y2_colour.grid(row=1, column=6, pady=4, padx=4, sticky="e")
         
 num_xvalues = []
@@ -1033,12 +1093,12 @@ def YColour(column):
             ColourFrameY2.grid_forget()
             OpenY2 = False
 
-def SetYrgb(column):
-    if column == 1:
-        y1_colour.config(bg=y1_rgb.get())
-    elif column == 2:
+def SetYrgb(column): #called when Enter pressed
+    if column == 1: #for y1 column
+        y1_colour.config(bg=y1_rgb.get()) #set the colour block
+    elif column == 2: #for y2 column
         y2_colour.config(bg=y2_rgb.get())
-    GetCoordinate()
+    GetCoordinate() #update the graph
 
 def coordinates(*args):
     global x_coordinate, y1_coordinate, y2_coordinate, y1_colour, y2_colour, ColourFrameY1, ColourFrameY2
@@ -1052,16 +1112,21 @@ def coordinates(*args):
     y1_coordinate.grid(row=1, column=3, columnspan=2)
     #y1_coordinate.insert(1.0, "   y₁")
     y1_coordinate.config(state="disable")
+
+    #create the colour block with dark border
     y1_colour = tk.Frame(coordinate_frame, height=25, width=25, bg="#626c8d", highlightbackground="#353535", highlightthickness=3)
+    #place it next to the column title
     y1_colour.grid(row=1, column=3, pady=4, padx=4, sticky="e")
-    y1_colour.grid_forget()
+    y1_colour.grid_forget()#before activated
     y1_colour.bind("<Button-1>", lambda x: YColour(1))
+    #the small page below the colour block
     ColourFrameY1 = tk.Frame(coordinate_frame, height=25, width=100, bg="lightgrey")
     ColourFrameY1.grid(row=2, rowspan=2, column=3, columnspan=2, sticky="ne")
     ColourFrameY1.grid_forget()
+    #Entry for rgb code
     ColourEntryY1 = tk.Entry(ColourFrameY1, textvariable=y1_rgb, width=10, font=("Arial",11))
     ColourEntryY1.grid(row=1, column=1, columnspan=3, pady=3, padx=3, stick="n")
-    ColourEntryY1.bind("<Return>", lambda x: SetYrgb(1))
+    ColourEntryY1.bind("<Return>", lambda x: SetYrgb(1)) #bind Enter key
     
     y2_coordinate = tk.Text(coordinate_frame, height=1, width=8, bd=0, bg="whitesmoke", font=("Arial",17))
     y2_coordinate.grid(row=1, column=5, columnspan=2)
@@ -1075,7 +1140,7 @@ def coordinates(*args):
     ColourFrameY2.grid_forget()
     ColourEntryY2 = tk.Entry(ColourFrameY2, textvariable=y2_rgb, width=10, font=("Arial",11))
     ColourEntryY2.grid(row=1, column=1, columnspan=5, pady=3, padx=3, stick="n")
-    ColourEntryY2.bind("<Return>", lambda x: SetYrgb(2))
+    ColourEntryY2.bind("<Return>", lambda x: SetYrgb(2)) #bind Enter key
 
     NewCoordinate()
 
@@ -1116,14 +1181,16 @@ def NewCoordinate(*args):
         num_y1values[i-1].unbind('<ButtonRelease-1>')
         num_y2values[i-1].unbind('<ButtonRelease-1>')
 
-    if Col == "Y2":
+    if Col == "Y2": #as Y2 column is activated
+        #new rows should be in #FDFDFD
         num_y1values[i].config(bg="#FDFDFD")
         num_y2values[i].config(bd=1, bg="#FDFDFD")
-    elif Col == "Y1":
-        num_y1values[i].config(bd=1,bg="#FDFDFD")
-        num_y2values[i].config(bd=1)
+    elif Col == "Y1": #as only Y1 column is activated
+        #new row in Y1 should be in #FDFDFD
+        num_y1values[i].config(bd=1,bg="#FDFDFD") 
+        num_y2values[i].config(bd=1) #in whitesmoke colour
         num_y2values[i].bind("<<Modified>>", ActY2)
-    else:
+    else: #no Y columns are activated
         num_y1values[i].config(bd=1, bg="whitesmoke")
         num_y2values[i].config(bd=0, bg="whitesmoke")
         num_y1values[i].bind("<<Modified>>", ActY1)
@@ -1170,34 +1237,55 @@ def PlotFit(column):
         Y = Y2list
 
     if fitLine.get() == "LINEAR":
+        #linear fit line is in degree 1
+        #collect the gradient and the y intercept
         m, c = np.polyfit(X, Y, 1)
-        print(m,c)
-        x = np.linspace(-10, 20, 300)
-        T = m*x + c
+        print(m, c)
+        x = np.linspace(min(X)-5, max(X)+5, 300)
+        T = m*x + c #calculate the Y values
     elif fitLine.get() == "QUADRATIC":
+        #Quadratic with degree 2
         a, b, c = np.polyfit(X, Y, 2)
         print(a, b, c)
-        x = np.linspace(-10,20,300)
-        T = a*x**2 + b*x + c
+        x = np.linspace(min(X)-5, max(X)+5,300)
+        T = a*x**2 + b*x + c #calculate the equation for Y
     elif fitLine.get() == "CUBIC":
+        #Cubic with degree 3
         a, b, c, d = np.polyfit(X, Y, 3)
         print(a, b, c, d)
-        x = np.linspace(-10,20,300)
-        T = a*x**3 + b*x**2 + c*x + d
+        x = np.linspace(min(X)-5, max(X)+5,300)
+        T = a*x**3 + b*x**2 + c*x + d #calculate for Y
     elif fitLine.get() == "EXPONENTIAL":
-        Index = np.where(Y == 0)
+        Index = np.where(Y == 0) #remove 0 coordinate
         Y = np.delete(Y, Index)
         X = np.delete(X, Index)
-        
+        #has to turn the equation into log form
         logY = np.log(Y)
         b, logA = np.polyfit(X, logY, 1)
         a = np.exp(logA)
         print(a, b)
-        x = np.linspace(-10,20,300)
-        T = a*np.exp(b*x)
+        x = np.linspace(min(X)-5, max(X)+5,300)
+        T = a*np.exp(b*x) #calculate in exp
+
+        
+    elif fitLine.get() == "LOGARITHMIC":
+        Index = np.where(Y == 0)
+        Y = np.delete(Y, Index)
+        X = np.delete(X, Index)
+        
+        logX = np.log(X)
+        valid_indices = np.isfinite(logX) & np.isfinite(Y)
+        logX = logX[valid_indices]
+        Y = Y[valid_indices]
+        a, b = np.polyfit(logX, Y, 1)
+        print(a, b)
+        x = np.linspace(min(X)-5, max(X)+5,300)
+        #x = x[x>0]
+        T = a*np.log(x)+b
     elif fitLine.get() == "SCATTER":
         x = X
         y = Y
+   
         
         
 
@@ -1226,10 +1314,21 @@ def PlotFit(column):
 
 def GetCoordinate(*args):
     I = len(num_xvalues)
-    global y1_rgb, y2_rgb
+    global y1_rgb, y2_rgb, current_coord, CoordY1, CoordY2
     Xlist = []
     Y1list = []
     Y2list = []
+    try:
+        for coord in CoordY1:
+            coord.remove()
+        CoordY1 = []
+        if Col == "Y2":
+            for coord in CoordY2:
+                coord.remove()
+            CoordY2 = []
+        canvas.draw()
+    except:
+        pass
     for i in range(0,I-1):
         xValues = num_xvalues[i].get("1.0", tk.END).strip()
         if "π" in xValues:
@@ -1257,18 +1356,19 @@ def GetCoordinate(*args):
     coordOOP.set_y1(Y1list)
     coordOOP.set_y2(Y2list)
 
-        
+
+    
     try:
-        if len(EntryField_list) >= 2:
-            GetEquation()
-        else:
-            ax.clear()
-            canvas.draw()
-            InitialGraph()
-            PlotCoordinate(coordOOP.get_x(), coordOOP.get_y1(), y1_rgb.get())
-            PlotCoordinate(coordOOP.get_x(), coordOOP.get_y2(), y2_rgb.get()) 
+        #only plot coordinate
+        CoordY1 = PlotCoordinate(coordOOP.get_x(), coordOOP.get_y1(), y1_rgb.get())
+        if Col == "Y2":
+            CoordY2 = PlotCoordinate(coordOOP.get_x(), coordOOP.get_y2(), y2_rgb.get())
     except:
         ErrorMsg("Invalid Value Entered")
+
+
+
+    #canvas.draw()
 
 
 
@@ -1331,7 +1431,7 @@ def clear(*args):
     global num_xvalues, num_y1values, num_y2values, x_coordinate, y_coordinate, Col, Y1coordinate, Y2coordinate
     global Xintercept, Yintercept, plotforinter
     for i in range(0, len(EntryField_list)):
-        #EntryField_list[i].delete(1.0,"end")
+        EntryField_list[i].delete(1.0,"end")
         EntryField_list[i].destroy()
         Appearance_field[i].destroy()
         Line_list[i].destroy()
@@ -1356,7 +1456,7 @@ def clear(*args):
             LineStyleSetting[i].destroy()
         except:
             pass
-
+    error_message.grid_forget()
     EntryField_list = ['1']
     Appearance_field = ['1']
     Appearance_num = ['1']
@@ -1399,10 +1499,10 @@ def clear(*args):
 #store function -------
 def StoreCSV(*args):
     Store_list=[]
-    for i in range(0,len(EntryField_list)-1):
-        Equation_list[i] = EntryField_list[i].get(1.0, tk.END).strip()
-        if Equation_list[i] != "":
-            Store_list.append(Equation_list[i])
+    print(Equation_list)
+    Store_list = Equation_list
+    Store_list.remove("")
+    print(Store_list)
 
     Xlist = []
     Y1list = []
@@ -1447,9 +1547,9 @@ def OpenCSV(*args):
     file_path = filedialog.askopenfilename(title="Open CSV file", filetypes=[("CSV files", "*.csv")])
     print("------------------------------------------------")
     print(f"CSV file opend from: {file_path}")
-    clear() # Clear previous data in the application
-    EntryField_list[0].delete("1.0", tk.END)
     if file_path:
+        clear() # Clear previous data in the application
+        EntryField_list[0].delete("1.0", tk.END)
         with open(file_path, mode="r") as file: # Open the CSV file in read mode
             reader = csv.reader(file)
             I1 = 0 #Index variable for num_y1values entries
@@ -1570,7 +1670,7 @@ lineFrame()
     
 #SAVE ------------
 def ExportGraph():
-    toolbar.save_figure()
+    toolbar.save_figure() #toolbar export button
 
 
 #4. menubar
@@ -1629,6 +1729,7 @@ bestFit_menu.add_radiobutton(label="Linear", variable=fitLine, value="LINEAR")
 bestFit_menu.add_radiobutton(label="Quadratic", variable=fitLine, value="QUADRATIC")
 bestFit_menu.add_radiobutton(label="Cubic", variable=fitLine, value="CUBIC")
 bestFit_menu.add_radiobutton(label="Exponential", variable=fitLine, value="EXPONENTIAL")
+bestFit_menu.add_radiobutton(label="Logarithmic", variable=fitLine, value="LOGARITHMIC")
 bestFit_menu.add_separator()
 bestFit_menu.add_radiobutton(label="Scatter", variable=fitLine, value="SCATTER")
 
@@ -1862,4 +1963,3 @@ Line_list = ['1']
 InitialField()
 InitialGraph()
 root.mainloop()
-
